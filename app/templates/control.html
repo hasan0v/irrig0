@@ -1,0 +1,578 @@
+{% extends "base.html" %}
+
+{% block title %}Kontrol{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card mb-4 shadow-2">
+        <div class="card-header bg-dark-green-gradient text-white">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-sliders fs-3 me-3"></i>
+                <div>
+                    <h2 class="card-title mb-1">Cihaz Kontrolü</h2>
+                    <p class="card-text mb-0">Bağlı cihazları buradan kontrol edebilirsiniz.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="device-list" class="row g-4 mt-3">
+        {# Device cards will be loaded here by JavaScript #}
+        <div class="col-12 text-center">
+            <div class="spinner-border text-success" role="status" id="device-loading-spinner">
+                <span class="visually-hidden">Yükleniyor...</span>
+            </div>
+            <p class="text-muted mt-3" id="device-loading-message">Cihazlar yükleniyor...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const deviceListContainer = document.getElementById('device-list');
+    const loadingMessage = document.getElementById('device-loading-message');
+
+    // Function to render a single device card
+    function renderDevice(device) {
+        // Determine status color and icon (example)
+        let statusColor = 'text-muted';
+        let statusIcon = 'bi-question-circle'; // Bootstrap Icons needed
+        let statusText = device.status || 'UNKNOWN';
+
+        switch (statusText.toUpperCase()) {
+            case 'ON':
+            case 'OPEN':
+                statusColor = 'text-success';
+                statusIcon = 'bi-check-circle-fill';
+                break;
+            case 'OFF':
+            case 'CLOSED':
+                statusColor = 'text-danger';
+                statusIcon = 'bi-x-circle-fill';
+                break;
+            case 'RUNNING':
+                 statusColor = 'text-primary';
+                 statusIcon = 'bi-gear-fill';
+                 break;
+            case 'IDLE':
+                 statusColor = 'text-secondary';
+                 statusIcon = 'bi-pause-circle-fill';
+                 break;
+            case 'ERROR':
+                statusColor = 'text-warning';
+                statusIcon = 'bi-exclamation-triangle-fill';
+                break;
+        }        // Basic card structure (adjust layout as needed)
+        // Using col-md-6 col-lg-4 for responsiveness
+        const cardHtml = `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 device-card shadow-2">
+                    <div class="card-header ${getDeviceHeaderClass(device, statusText)}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0 text-white">
+                                <i class="${getDeviceIcon(device)} me-2"></i>${device.name || 'Unnamed Device'}
+                            </h5>
+                            <span class="badge bg-light text-dark badge-pill">
+                                <i class="${statusIcon} me-1"></i> ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted"><i class="bi bi-tag me-1"></i>Kontrol ID:</span>
+                                <span class="fw-bold">${device.control_id}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted"><i class="bi bi-clock-history me-1"></i>Son Güncelleme:</span>
+                                <span>${device.last_status_update ? new Date(device.last_status_update).toLocaleString() : 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="mt-auto pt-2 text-center">
+                            ${renderControlButtons(device)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        return cardHtml;
+    }
+    
+    // Function to get device header class based on device type and status
+    function getDeviceHeaderClass(device, status) {
+        const deviceType = (device.device_type || '').toUpperCase();
+        status = status.toUpperCase();
+        
+        // If device is disabled, return a muted header
+        if (device.is_enabled === false) {
+            return 'bg-secondary';
+        }
+        
+        // If device has interlock, return a warning header
+        if (device.interlock && device.interlock.blocked) {
+            return 'bg-warning-gradient';
+        }
+        
+        // Based on device type and status
+        if (deviceType.includes('PUMP')) {
+            return status === 'ON' || status === 'RUNNING' ? 'bg-success-gradient' : 'bg-dark-green-gradient';
+        } else if (deviceType.includes('VALVE')) {
+            return status === 'OPEN' ? 'bg-info-gradient' : 'bg-dark-green-gradient';
+        } else if (deviceType.includes('LIGHT')) {
+            return status === 'ON' ? 'bg-warning-gradient' : 'bg-dark-green-gradient';
+        } else if (deviceType.includes('FAN')) {
+            return status === 'ON' ? 'bg-info-gradient' : 'bg-dark-green-gradient';
+        } else if (deviceType.includes('HEATER')) {
+            return status === 'ON' ? 'bg-danger-gradient' : 'bg-dark-green-gradient';
+        } else {
+            return status === 'ON' || status === 'OPEN' || status === 'RUNNING' ? 'bg-primary-gradient' : 'bg-dark-green-gradient';
+        }
+    }
+    
+    // Function to get device icon based on device type
+    function getDeviceIcon(device) {
+        const deviceType = (device.device_type || '').toUpperCase();
+        
+        if (deviceType.includes('PUMP')) {
+            return 'bi-water';
+        } else if (deviceType.includes('VALVE')) {
+            return 'bi-arrow-left-right';
+        } else if (deviceType.includes('LIGHT')) {
+            return 'bi-lightbulb';
+        } else if (deviceType.includes('FAN')) {
+            return 'bi-fan';
+        } else if (deviceType.includes('HEATER')) {
+            return 'bi-thermometer-high';
+        } else {
+            return 'bi-cpu';
+        }
+    }    // Function to render appropriate control buttons based on device type (TASK-053)
+    function renderControlButtons(device) {
+        const deviceType = (device.device_type || '').toUpperCase();
+        const status = (device.status || '').toUpperCase();
+        
+        // TASK-058: Check for safety interlocks
+        if (device.interlock && device.interlock.blocked) {
+            return `<div class="alert alert-warning py-2 small mb-2 rounded-5">
+                      <i class="bi bi-shield-exclamation me-1"></i> ${device.interlock.reason || 'Safety interlock active'}
+                    </div>
+                    <button class="btn btn-warning btn-rounded btn-sm ripple-surface shadow-1" disabled>
+                      <i class="bi bi-lock me-1"></i>Kontrollar kilitli
+                    </button>`;
+        }
+        
+        // If device is disabled, show disabled controls
+        if (device.is_enabled === false) {
+            return `<div class="alert alert-secondary py-2 small mb-2 rounded-5">Cihaz devre dışı</div>
+                    <button class="btn btn-secondary btn-rounded btn-sm ripple-surface shadow-1" disabled>Kontrollar kullanılamaz</button>`;
+        }
+        
+        // Handle different device types
+        if (deviceType.includes('PUMP') || deviceType.includes('MOTOR')) {
+            // Pump controls (ON/OFF)
+            if (status === 'ON' || status === 'RUNNING') {
+                return `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-power me-1"></i>Kapat
+                        </button>`;
+            } else {
+                return `<button class="btn btn-success btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-play-fill me-1"></i>Aç
+                        </button>`;
+            }
+        } else if (deviceType.includes('VALVE')) {
+            // Valve controls (OPEN/CLOSE)
+            if (status === 'OPEN') {
+                return `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="CLOSE">
+                            <i class="bi bi-x-circle me-1"></i>Vanayı Kapat
+                        </button>`;
+            } else {
+                return `<button class="btn btn-dark-green-gradient btn-rounded control-btn ripple-surface shadow-2 text-white" data-device="${device.control_id}" data-action="OPEN">
+                            <i class="bi bi-check-circle me-1"></i>Vanayı Aç
+                        </button>`;
+            }
+        } else if (deviceType.includes('LIGHT')) {
+            // Light controls (ON/OFF)
+            if (status === 'ON') {
+                return `<button class="btn btn-dark btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-lightbulb-off me-1"></i>Kapat
+                        </button>`;
+            } else {
+                return `<button class="btn btn-warning btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-lightbulb me-1"></i>Aç
+                        </button>`;
+            }
+        } else if (deviceType.includes('FAN')) {
+            // Fan controls (ON/OFF)
+            if (status === 'ON' || status === 'RUNNING') {
+                return `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-fan me-1"></i>Kapat
+                        </button>`;
+            } else {
+                return `<button class="btn btn-dark-green-gradient btn-rounded control-btn ripple-surface shadow-2 text-white" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-fan me-1"></i>Aç
+                        </button>`;
+            }
+        } else if (deviceType.includes('HEATER')) {
+            // Heater controls (ON/OFF)
+            if (status === 'ON') {
+                return `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-thermometer-high me-1"></i>Kapat
+                        </button>`;
+            } else {
+                return `<button class="btn btn-dark-green-gradient btn-rounded control-btn ripple-surface shadow-2 text-white" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-thermometer-high me-1"></i>Aç
+                        </button>`;
+            }
+        } else {
+            // Generic control buttons for other device types
+            if (status === 'ON' || status === 'OPEN' || status === 'RUNNING') {
+                return `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-power me-1"></i>Kapat
+                        </button>`;
+            } else {
+                return `<button class="btn btn-dark-green-gradient btn-rounded control-btn ripple-surface shadow-2 text-white" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-power me-1"></i>Aç
+                        </button>`;
+            }
+        }
+        
+        // Handle different device types
+        if (deviceType.includes('PUMP') || deviceType.includes('MOTOR')) {
+            // Pump controls (ON/OFF)
+            if (status === 'ON' || status === 'RUNNING') {
+                return `<button class="btn btn-sm btn-danger control-btn" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-power me-1"></i>Turn Off
+                        </button>`;
+            } else {
+                return `<button class="btn btn-sm btn-success control-btn" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-play-fill me-1"></i>Turn On
+                        </button>`;
+            }
+        } else if (deviceType.includes('VALVE')) {
+            // Valve controls (OPEN/CLOSE)
+            if (status === 'OPEN') {
+                return `<button class="btn btn-sm btn-danger control-btn" data-device="${device.control_id}" data-action="CLOSE">
+                            <i class="bi bi-x-circle me-1"></i>Close Valve
+                        </button>`;
+            } else {
+                return `<button class="btn btn-sm btn-success control-btn" data-device="${device.control_id}" data-action="OPEN">
+                            <i class="bi bi-check-circle me-1"></i>Open Valve
+                        </button>`;
+            }
+        } else if (deviceType.includes('LIGHT')) {
+            // Light controls (ON/OFF)
+            if (status === 'ON') {
+                return `<button class="btn btn-sm btn-secondary control-btn" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-lightbulb-off me-1"></i>Turn Off
+                        </button>`;
+            } else {
+                return `<button class="btn btn-sm btn-warning control-btn" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-lightbulb me-1"></i>Turn On
+                        </button>`;
+            }
+        } else {
+            // Generic control buttons for other device types
+            if (status === 'ON' || status === 'OPEN' || status === 'RUNNING') {
+                return `<button class="btn btn-sm btn-danger control-btn" data-device="${device.control_id}" data-action="OFF">
+                            <i class="bi bi-power me-1"></i>Turn Off
+                        </button>`;
+            } else {
+                return `<button class="btn btn-sm btn-success control-btn" data-device="${device.control_id}" data-action="ON">
+                            <i class="bi bi-power me-1"></i>Turn On
+                        </button>`;
+            }
+        }
+    }
+
+    // Function to fetch devices and render them
+    async function loadDevices() {
+        loadingMessage.textContent = 'Cihazlar yükleniyor...';
+        try {
+            const response = await fetch("{{ url_for('api_devices') }}");
+            if (!response.ok) {
+                 if (response.status === 401) {
+                    console.warn("Unauthorized (Devices). Redirecting to login.");
+                    window.location.href = "{{ url_for('login') }}";
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return;
+            }
+            const devices = await response.json();
+
+            // Clear previous content (loading message)
+            deviceListContainer.innerHTML = '';
+
+            if (devices && devices.length > 0) {
+                devices.forEach(device => {
+                    deviceListContainer.innerHTML += renderDevice(device);
+                });
+            } else {
+                deviceListContainer.innerHTML = '<div class="col-12"><p class="text-center text-muted">Kontrol edilecek cihaz bulunamadı.</p></div>';
+            }
+
+        } catch (error) {
+            console.error("Could not fetch devices:", error);
+            deviceListContainer.innerHTML = '<div class="col-12"><p class="text-center text-danger">Cihazlar yüklenirken hata oluştu.</p></div>';
+        }
+    }
+
+    // Load devices when the page is ready
+    document.addEventListener('DOMContentLoaded', loadDevices);
+
+    // Handle device control button clicks (TASK-054)
+    deviceListContainer.addEventListener('click', async (event) => {
+        // Check if clicked element is a control button
+        if (event.target.closest('.control-btn')) {
+            const button = event.target.closest('.control-btn');
+            const deviceId = button.dataset.device;
+            const action = button.dataset.action;
+            
+            if (!deviceId || !action) {
+                console.error('Missing device ID or action');
+                return;
+            }
+            
+            // Disable button while processing
+            button.disabled = true;
+            
+            // Show processing status
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Processing...';
+            
+            try {
+                // Send control command to API (TASK-054)
+                const response = await fetch(`{{ url_for('api_control_device', control_id='') }}${deviceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action: action })
+                });
+                
+                const result = await response.json();                // Handle result and provide user feedback (TASK-055)
+                if (response.ok) {
+                    // Show success toast
+                    showToast(`Komut gönderildi: ${action} ${deviceId}`, 'success');
+                    
+                    // First restore the button state to remove the spinner
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    
+                    // Update the device's status locally for immediate feedback
+                    updateDeviceStatusLocally(deviceId, action);
+                    
+                    // Then reload all devices after a delay to ensure server state is synced
+                    setTimeout(loadDevices, 1500);
+                } else {
+                    // Show error message
+                    console.error('Error:', result.error);
+                    showToast(`Hata: ${result.error}`, 'danger');
+                    
+                    // Restore button state
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            } catch (error) {
+                console.error('Failed to send command:', error);
+                showToast('Failed to communicate with the server', 'danger');
+                
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+    });    // Function to show toast notifications (TASK-055)
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Create a unique ID for this toast
+        const toastId = 'toast-' + Date.now();
+        const timerBarId = 'timer-' + Date.now();
+        
+        // Create the toast HTML with timer bar and without close button
+        const toastHtml = `
+            <div id="${toastId}" class="toast rounded-6 shadow-3" role="alert" aria-live="assertive" aria-atomic="true" data-mdb-autohide="true" data-mdb-delay="3000" data-mdb-position="bottom-right">
+                <div class="toast-header bg-${type}-gradient text-white rounded-top-6 py-2">
+                    <i class="bi ${type === 'success' ? 'bi-check-circle' : type === 'danger' ? 'bi-exclamation-triangle' : 'bi-info-circle'} me-2"></i>
+                    <strong class="me-auto">İrrigo Kontrol</strong>
+                    <small class="text-white">${new Date().toLocaleTimeString()}</small>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                    <div id="${timerBarId}" class="progress mt-2" style="height: 4px;">
+                        <div class="progress-bar bg-${type}" role="progressbar" style="width: 100%; transition: width 3s linear;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add the toast to the container
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        
+        // Get the toast element and timer bar
+        const toastElement = document.getElementById(toastId);
+        const timerBar = document.getElementById(timerBarId).querySelector('.progress-bar');
+        
+        // Start the timer animation
+        setTimeout(() => {
+            timerBar.style.width = '0%';
+        }, 50);
+        
+        // Initialize and show the toast using MDB
+        const toastInstance = new mdb.Toast(toastElement);
+        toastInstance.show();
+        
+        // Remove the toast after the animation completes
+        setTimeout(() => {
+            toastElement.remove();
+        }, 3100);
+    }
+    
+    // Function to update device status locally (without waiting for server refresh)
+    function updateDeviceStatusLocally(deviceId, action) {
+        // Find the device card for this device
+        const deviceCard = document.querySelector(`.control-btn[data-device="${deviceId}"]`).closest('.col-md-6');
+        if (!deviceCard) return;
+        
+        // Map actions to their resulting status
+        const actionToStatus = {
+            'ON': 'ON',
+            'OFF': 'OFF',
+            'OPEN': 'OPEN',
+            'CLOSE': 'CLOSED'
+        };
+        
+        const newStatus = actionToStatus[action];
+        if (!newStatus) return;
+        
+        // Update the status badge
+        const badge = deviceCard.querySelector('.badge');
+        if (badge) {
+            // Update badge appearance
+            let statusIcon = 'bi-question-circle';
+            let badgeClass = 'bg-light text-dark badge-pill';
+            
+            if (newStatus === 'ON' || newStatus === 'OPEN') {
+                statusIcon = 'bi-check-circle-fill';
+            } else if (newStatus === 'OFF' || newStatus === 'CLOSED') {
+                statusIcon = 'bi-x-circle-fill';
+            }
+            
+            badge.className = `badge ${badgeClass}`;
+            badge.innerHTML = `<i class="${statusIcon} me-1"></i> ${newStatus}`;
+        }
+        
+        // Update the card header color based on new status
+        const cardHeader = deviceCard.querySelector('.card-header');
+        if (cardHeader) {
+            // Get device type to determine appropriate header color
+            let deviceType = '';
+            const subtitle = deviceCard.querySelector('.card-subtitle');
+            if (subtitle) {
+                deviceType = subtitle.textContent.toUpperCase();
+            }
+            
+            // Determine new header class
+            let headerClass = 'bg-dark-green-gradient';
+            
+            if (newStatus === 'ON' || newStatus === 'OPEN') {
+                if (deviceType.includes('PUMP')) {
+                    headerClass = 'bg-success-gradient';
+                } else if (deviceType.includes('VALVE')) {
+                    headerClass = 'bg-info-gradient';
+                } else if (deviceType.includes('LIGHT')) {
+                    headerClass = 'bg-warning-gradient';
+                } else {
+                    headerClass = 'bg-success-gradient';
+                }
+            }
+            
+            // Update header class
+            cardHeader.className = `card-header ${headerClass} text-white`;
+        }
+        
+        // Replace the button with its opposite action
+        const button = deviceCard.querySelector('.control-btn');
+        if (button) {
+            const oppositeAction = action === 'ON' ? 'OFF' : 
+                                   action === 'OFF' ? 'ON' : 
+                                   action === 'OPEN' ? 'CLOSE' : 
+                                   action === 'CLOSE' ? 'OPEN' : null;
+            
+            if (oppositeAction) {
+                // Create new button based on the device type and new state
+                let deviceType = '';
+                const subtitle = deviceCard.querySelector('.card-subtitle');
+                if (subtitle) {
+                    deviceType = subtitle.textContent.toUpperCase();
+                }
+                
+                let newButtonHTML = '';
+                
+                if (deviceType.includes('PUMP') || deviceType.includes('MOTOR')) {
+                    if (newStatus === 'ON') {
+                        newButtonHTML = `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${deviceId}" data-action="OFF">
+                            <i class="bi bi-power me-1"></i>Kapat
+                        </button>`;
+                    } else {
+                        newButtonHTML = `<button class="btn btn-success btn-rounded control-btn ripple-surface shadow-2" data-device="${deviceId}" data-action="ON">
+                            <i class="bi bi-play-fill me-1"></i>Aç
+                        </button>`;
+                    }
+                } else if (deviceType.includes('VALVE')) {
+                    if (newStatus === 'OPEN') {
+                        newButtonHTML = `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${deviceId}" data-action="CLOSE">
+                            <i class="bi bi-x-circle me-1"></i>Vanayı Kapat
+                        </button>`;
+                    } else {
+                        newButtonHTML = `<button class="btn btn-dark-green-gradient btn-rounded control-btn ripple-surface shadow-2 text-white" data-device="${deviceId}" data-action="OPEN">
+                            <i class="bi bi-check-circle me-1"></i>Vanayı Aç
+                        </button>`;
+                    }
+                } else if (deviceType.includes('LIGHT')) {
+                    if (newStatus === 'ON') {
+                        newButtonHTML = `<button class="btn btn-dark btn-rounded control-btn ripple-surface shadow-2" data-device="${deviceId}" data-action="OFF">
+                            <i class="bi bi-lightbulb-off me-1"></i>Kapat
+                        </button>`;
+                    } else {
+                        newButtonHTML = `<button class="btn btn-warning btn-rounded control-btn ripple-surface shadow-2" data-device="${deviceId}" data-action="ON">
+                            <i class="bi bi-lightbulb me-1"></i>Aç
+                        </button>`;
+                    }
+                } else {
+                    // Generic device
+                    if (newStatus === 'ON' || newStatus === 'OPEN') {
+                        newButtonHTML = `<button class="btn btn-danger btn-rounded control-btn ripple-surface shadow-2" data-device="${deviceId}" data-action="OFF">
+                            <i class="bi bi-power me-1"></i>Kapat
+                        </button>`;
+                    } else {
+                        newButtonHTML = `<button class="btn btn-dark-green-gradient btn-rounded control-btn ripple-surface shadow-2 text-white" data-device="${deviceId}" data-action="ON">
+                            <i class="bi bi-power me-1"></i>Aç
+                        </button>`;
+                    }
+                }
+                
+                // Replace button parent's content
+                const buttonContainer = button.parentElement;
+                if (buttonContainer) {
+                    buttonContainer.innerHTML = newButtonHTML;
+                }
+            }
+        }
+    }
+
+    // Optional: Add periodic refresh for device status if needed
+    // setInterval(loadDevices, 30000); // Example: Refresh every 30 seconds
+
+</script>
+{# Add Bootstrap Icons CDN link to base.html if not already present #}
+{% endblock %}

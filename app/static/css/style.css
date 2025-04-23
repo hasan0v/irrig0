@@ -1,0 +1,59 @@
+/* İrrigo - Custom Application Styles */
+
+/* Navigation enhancements */
+.navbar-nav .nav-link.active {
+    font-weight: 600;
+    position: relative;
+}
+
+.navbar-nav .nav-link.active::after {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0;
+    height: 3px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 3px 3px 0 0;
+}
+
+/* Custom badges */
+.badge-pill {
+    border-radius: 10rem;
+    padding-right: 0.6rem;
+    padding-left: 0.6rem;
+}
+
+/* Toast notifications */
+.toast-container {
+    z-index: 1060;
+}
+
+.toast {
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Device cards */
+.device-card {
+    transition: transform 0.3s ease;
+}
+
+.device-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .navbar-collapse {
+        background-color: rgba(27, 94, 32, 0.95);
+        border-radius: 0 0 10px 10px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .device-card {
+        margin-bottom: 1rem;
+    }
+}

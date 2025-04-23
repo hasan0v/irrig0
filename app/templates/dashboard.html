@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block title %}Anlık Durum{% endblock %}
+
+{% block content %}
+{# Sticky Header - FR-DASH-A - Enhanced Visuals #}
+<div class="sticky-top p-3 mb-4 shadow-2 rounded-6 bg-white"> 
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Genel Bakış</h5>
+        <small class="text-muted"><i class="bi bi-clock me-1"></i>Son Güncelleme: <span id="last-updated-header" class="fw-bold">Never</span></small>
+    </div>
+    <div class="row text-center g-3">        {# FR-DASH-A02: Temperature #}
+        <div class="col">
+            <div id="temp-card" class="p-3 rounded-6 bg-danger-gradient shadow-1-strong h-100">
+                <small class="d-block mb-1 text-white"><i class="bi bi-thermometer-half me-1"></i>Sıcaklık</small>
+                <div class="fs-4 fw-bold text-white"><span id="overview-temp">--</span> °C</div>
+            </div>
+        </div>
+        {# FR-DASH-A03: Humidity #}
+        <div class="col">
+            <div class="p-3 rounded-6 bg-info-gradient shadow-1-strong h-100">
+                <small class="d-block mb-1 text-white"><i class="bi bi-droplet-half me-1"></i>Nem</small>
+                <div class="fs-4 fw-bold text-white"><span id="overview-humidity">--</span> %</div>
+            </div>
+        </div>
+        {# FR-DASH-A04: UV Intensity #}
+        <div class="col">
+            <div class="p-3 rounded-6 bg-warning-gradient shadow-1-strong h-100">
+                <small class="d-block mb-1 text-white"><i class="bi bi-sun me-1"></i>UV Yoğunluğu</small>
+                <div class="fs-4 fw-bold text-white"><span id="overview-uv">--</span></div>
+            </div>
+        </div>
+        {# FR-DASH-A05: Rainfall #}
+        <div class="col">
+            <div class="p-3 rounded-6 bg-primary-gradient shadow-1-strong h-100">
+                <small class="d-block mb-1 text-white"><i class="bi bi-cloud-rain me-1"></i>Yağış</small> 
+                <div class="fs-4 fw-bold text-white"><span id="overview-rainfall">--</span> mm</div>
+            </div>
+        </div>        {# FR-DASH-A06: Atmospheric Pressure (Placeholder) #}
+        <div class="col">
+            <div class="p-3 rounded-6 bg-secondary shadow-1-strong h-100 text-white">
+                <small class="d-block mb-1"><i class="bi bi-speedometer me-1"></i>Basınç</small>
+                <div class="fs-4 fw-bold">-- hPa</div>
+            </div>
+        </div>
+        {# FR-DASH-A07: Water Processed (Placeholder) #}
+        <div class="col-md-3">
+             <div class="p-3 rounded-6 bg-green-gradient shadow-1-strong h-100 text-white">
+                <small class="d-block mb-1"><i class="bi bi-recycle me-1"></i>Su İşleme (Bugün)</small>
+                <div class="fs-4 fw-bold">Temiz: -- L | Kullanılan: -- L</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Main Dashboard Content Area - Using Grid #}
+<div class="container-fluid">    <div class="row g-4 mt-3">
+        {# FR-DASH-B: Soil Conditions Card - Enhanced Visuals #}
+        <div class="col-lg-6 col-md-12">
+            <div class="card h-100">
+                <div class="card-header bg-green-gradient text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-bricks me-2"></i>Toprak Durumu</h5>
+                        <small class="text-white opacity-75"><i class="bi bi-clock me-1"></i><span id="last-updated-soil">Never</span></small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        {# FR-DASH-B01: Soil Temperature #}
+                        <div class="col-sm-4 mb-3 mb-sm-0">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3 text-center">
+                                    <i class="bi bi-thermometer-low fs-3 text-success"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">Sıcaklık</small>
+                                    <strong class="fs-4"><span id="soil-temp">--</span> °C</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {# FR-DASH-B02: Soil Moisture #}
+                        <div class="col-sm-4 mb-3 mb-sm-0">
+                             <div class="d-flex align-items-center">
+                                <div class="me-3 text-center">
+                                    <i class="bi bi-moisture fs-3 text-info"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">Nem</small>
+                                    <strong class="fs-4"><span id="soil-moisture">--</span> %</strong>
+                                </div>
+                            </div>
+                            <div class="progress mt-2 rounded-pill" style="height: 10px;">
+                                <div id="soil-moisture-bar" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        {# FR-DASH-B03: Soil pH #}
+                        <div class="col-sm-4">
+                             <div class="d-flex align-items-center">
+                                <div class="me-3 text-center">
+                                    <i class="bi bi-radioactive fs-3 text-warning"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">pH</small>
+                                    <strong class="fs-4"><span id="soil-ph">--</span></strong>
+                                </div>
+                            </div>
+                            <div id="soil-ph-indicator" class="mt-2 p-1 rounded-pill" style="width: 100%; height: 10px; background-color: #e9ecef;"></div>
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">Diğer Parametreler</h6>
+                    <div class="row text-muted">
+                         {# FR-DASH-B04: Soil EC (Placeholder) #}
+                        <div class="col-sm-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-lightning-charge fs-5 me-2 text-primary"></i>
+                                <div>
+                                    <small class="d-block">EC</small>
+                                    <span>-- µS/cm</span>
+                                </div>
+                            </div>
+                        </div>
+                         {# FR-DASH-B05: Soil NPK (Placeholder) #}
+                        <div class="col-sm-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-flower1 fs-5 me-2 text-success"></i>
+                                <div>
+                                    <small class="d-block">NPK</small>
+                                    <span>-- mg/kg</span>
+                                </div>
+                            </div>
+                        </div>
+                         {# FR-DASH-B06: SAP Hydrogel Moisture (Placeholder) #}
+                        <div class="col-sm-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-gem fs-5 me-2 text-info"></i>
+                                <div>
+                                    <small class="d-block">SAP Nem</small>
+                                    <span>-- %</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# FR-DASH-E: Water Tank Status Card - Enhanced Visuals #}        <div class="col-lg-6 col-md-12">
+             <div class="card h-100">
+                <div class="card-header bg-info-gradient text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-water me-2"></i>Su Tankı Durumu</h5>
+                        <small class="text-white opacity-75"><i class="bi bi-clock me-1"></i><span id="last-updated-tank">Never</span></small>
+                    </div>
+                </div>
+                <div class="card-body">
+                     <div class="row mb-4">
+                        {# FR-DASH-E01: Clean Water Tank Volume #}
+                        <div class="col-sm-6 mb-3 mb-sm-0">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3 text-center">
+                                    <i class="bi bi-droplet-fill fs-3 text-info"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">Temiz Su Hacmi</small>
+                                    <strong class="fs-4"><span id="tank-volume">--</span> Litre</strong>
+                                </div>
+                            </div>
+                            {# Visual Tank Indicator (Material Style) #}
+                            <div class="border rounded-6 mt-2 shadow-1-strong" style="height: 120px; position: relative; background-color: #f5f5f5; overflow: hidden;">
+                                <div id="tank-volume-indicator" class="bg-info-gradient" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; transition: height 0.8s ease-in-out;"></div>
+                                <span id="tank-volume-percent" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #000; mix-blend-mode: difference; font-weight: bold; font-size: 1.5rem;">0%</span>
+                            </div>
+                            {# <small class="text-muted">(Maksimum Hacim?)</small> #} {# Removed note #}
+                        </div>
+                         {# FR-DASH-E03: Pump Pressure #}
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-speedometer fs-4 text-warning me-2"></i> {# Changed icon #}
+                                <div>
+                                    <small class="text-muted d-block">Pompa Basıncı</small>
+                                    <strong class="fs-5"><span id="pump-pressure">--</span> bar</strong> {# Assuming bar #}
+                                    {# <small class="text-muted d-block">(Hangi Pompa?)</small> #} {# Removed note #}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                     <hr>
+                     <h6 class="text-muted mb-2">Diğer Parametreler (Placeholder)</h6>
+                     <div class="row text-muted small">
+                         {# FR-DASH-E02: Dirty Water Tank Volume (Placeholder) #}
+                        <div class="col-sm-6 mb-2">
+                            <i class="bi bi-trash me-1"></i><strong>Kirli Su Hacmi:</strong> <span>-- Litre</span>
+                        </div>
+                         {# FR-DASH-E04: System Water Treatment Rate (Placeholder) #}
+                        <div class="col-sm-6 mb-2">
+                            <i class="bi bi-funnel me-1"></i><strong>Arıtma Hızı:</strong> <span>-- L/min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>        {# FR-DASH-C: Water Quality Card (Placeholders) - Enhanced Visuals #}
+        <div class="col-lg-6 col-md-12">
+             <div class="card h-100">
+                <div class="card-header bg-info-gradient text-white">
+                     <div class="d-flex justify-content-between align-items-center">
+                         <h5 class="mb-0"><i class="bi bi-eyedropper me-2"></i>Su Kalitesi (Arıtma Sonrası)</h5>
+                         <small class="text-white opacity-75"><i class="bi bi-clock me-1"></i><span id="last-updated-water">Never</span></small>
+                     </div>
+                </div>
+                <div class="card-body text-muted"> {# Added text-muted to card body for placeholders #}
+                    <div class="row">
+                        {# Core Items - FR-DASH-C01, C02, C03, C04, C13 #}
+                        <div class="col-sm-4 mb-3"><i class="bi bi-thermometer me-1"></i><strong>Sıcaklık:</strong> <span id="water-temp">--</span> °C</div>
+                        <div class="col-sm-4 mb-3"><i class="bi bi-activity me-1"></i><strong>pH:</strong> <span id="water-ph">--</span></div>
+                        <div class="col-sm-4 mb-3"><i class="bi bi-lightning me-1"></i><strong>EC:</strong> <span id="water-ec">--</span> µS/cm</div>
+                        <div class="col-sm-4 mb-3"><i class="bi bi-filter me-1"></i><strong>TDS:</strong> <span id="water-tds">--</span> mg/L</div>
+                        <div class="col-sm-4 mb-3"><i class="bi bi-water me-1"></i><strong>Debi:</strong> <span id="water-flow">--</span> L/min</div>
+                    </div>
+                     <hr>
+                     <p class="small"><i class="bi bi-info-circle me-1"></i>Detaylı parametreler (NTU, NH₃, NO₃ vb.) sensörler eklendikçe gösterilecektir.</p>
+                     {# FR-DASH-C16: Could add an expandable section here later #}
+                </div>
+            </div>
+        </div>        {# FR-DASH-D: Plant Environmental Factors Card (Placeholders) - Enhanced Visuals #}
+        <div class="col-lg-6 col-md-12">
+             <div class="card h-100">
+                <div class="card-header bg-green-gradient text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-tree me-2"></i>Bitki Ortamı Faktörleri</h5>
+                        <small class="text-white opacity-75"><i class="bi bi-clock me-1"></i><span id="last-updated-plant">Never</span></small>
+                    </div>
+                </div>
+                 <div class="card-body text-muted"> {# Added text-muted to card body for placeholders #}
+                    <div class="row">
+                         {# FR-DASH-D01, D02, D03, D04, D05 #}
+                        <div class="col-sm-4 mb-3"><i class="bi bi-brightness-high me-1"></i><strong>Işık (PAR):</strong> <span id="plant-par">--</span> µmol/m²/s</div>
+                        <div class="col-sm-4 mb-3"><i class="bi bi-cloud me-1"></i><strong>CO₂:</strong> <span id="plant-co2">--</span> ppm</div>
+                        <div class="col-sm-4 mb-3"><i class="bi bi-thermometer-sun me-1"></i><strong>Hava Sıcaklığı:</strong> <span id="plant-air-temp">--</span> °C</div>
+                        <div class="col-sm-6 mb-3"><i class="bi bi-moisture me-1"></i><strong>Toprak Nemi:</strong> <span id="plant-soil-moisture">--</span> %</div>
+                        <div class="col-sm-6 mb-3"><i class="bi bi-thermometer me-1"></i><strong>Toprak Sıcaklığı:</strong> <span id="plant-soil-temp">--</span> °C</div>
+                    </div>
+                    <hr>
+                    <p class="small"><i class="bi bi-info-circle me-1"></i>Veriler ilgili sensörler eklendikçe gösterilecektir.</p>
+                </div>
+            </div>
+        </div>
+
+
+    </div> {# End row #}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const REFRESH_INTERVAL = 30000; // 30 seconds (FR-DASH-002)
+    const MAX_TANK_VOLUME = 1000; // Example: 1000 Liters (Needs configuration)
+
+    // --- Helper Function ---
+    const updateText = (id, value, unit = '', precision = -1) => { // Default precision -1 means don't format
+        const element = document.getElementById(id);
+        if (!element) return; // Exit if element not found
+        if (value !== null && value !== undefined) {
+            element.textContent = (typeof value === 'number' && precision >= 0) ? value.toFixed(precision) : value;
+        } else {
+            element.textContent = '--';
+        }
+    };
+
+    // --- Overview Status Update ---
+    function updateOverviewData(data) {
+        if (!data) return;
+        updateText('overview-temp', data.temperature, '°C', 1);
+        updateText('overview-humidity', data.humidity, '%', 0);
+        updateText('overview-uv', data.uv_intensity, '', 1);
+        updateText('overview-rainfall', data.rainfall, 'mm', 1);
+        const timestampElementHeader = document.getElementById('last-updated-header');
+        if (timestampElementHeader) {
+            timestampElementHeader.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A';
+        }
+    }
+
+    async function fetchOverviewData() {
+        try {
+            const response = await fetch("{{ url_for('api_overview_status') }}");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            updateOverviewData(data);
+        } catch (error) {
+            console.error("Fetch Overview Error:", error);
+            if (error.message.includes('401')) window.location.href = "{{ url_for('login') }}";
+            const tsElement = document.getElementById('last-updated-header');
+            if (tsElement) tsElement.textContent = 'Error';
+        }
+    }
+
+    // --- Soil Status Update ---
+    function updateSoilData(data) {
+        if (!data) return;
+        updateText('soil-temp', data.soil_temperature, '°C', 1);
+        updateText('soil-moisture', data.soil_moisture_level, '%', 0);
+        updateText('soil-ph', data.ph_level, '', 2);
+
+        const moistureBar = document.getElementById('soil-moisture-bar');
+        if (moistureBar) {
+            if (data.soil_moisture_level !== null && data.soil_moisture_level !== undefined) {
+                const percentage = Math.max(0, Math.min(100, data.soil_moisture_level));
+                moistureBar.style.width = percentage + '%';
+                moistureBar.setAttribute('aria-valuenow', percentage);
+                if (percentage < 20) moistureBar.className = 'progress-bar bg-danger';
+                else if (percentage < 40) moistureBar.className = 'progress-bar bg-warning';
+                else if (percentage > 80) moistureBar.className = 'progress-bar bg-info';
+                else moistureBar.className = 'progress-bar bg-success';
+            } else {
+                 moistureBar.style.width = '0%';
+                 moistureBar.setAttribute('aria-valuenow', 0);
+                 moistureBar.className = 'progress-bar';
+            }
+        }
+
+        const phIndicator = document.getElementById('soil-ph-indicator');
+        if (phIndicator) {
+            if (data.ph_level !== null && data.ph_level !== undefined) {
+                let bgColor = '#6c757d';
+                if (data.ph_level < 5.5) bgColor = '#dc3545';
+                else if (data.ph_level < 6.5) bgColor = '#ffc107';
+                else if (data.ph_level <= 7.5) bgColor = '#198754';
+                else if (data.ph_level <= 8.5) bgColor = '#0dcaf0';
+                else bgColor = '#0d6efd';
+                phIndicator.style.backgroundColor = bgColor;
+            } else {
+                phIndicator.style.backgroundColor = '#e9ecef';
+            }
+        }
+
+        const timestampElementSoil = document.getElementById('last-updated-soil');
+        if (timestampElementSoil) {
+            timestampElementSoil.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A';
+        }
+    }
+
+    async function fetchSoilData() {
+        try {
+            const response = await fetch("{{ url_for('api_soil_status') }}");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            updateSoilData(data);
+        } catch (error) {
+            console.error("Fetch Soil Error:", error);
+            if (error.message.includes('401')) window.location.href = "{{ url_for('login') }}";
+            const tsElement = document.getElementById('last-updated-soil');
+            if (tsElement) tsElement.textContent = 'Error';
+        }
+    }
+
+    // --- Tank Status Update ---
+    function updateTankData(data) {
+        if (!data) return;
+        updateText('tank-volume', data.tank_water_volume, 'Litre', 0);
+        updateText('pump-pressure', data.pump_pressure, '', 1);
+
+        const tankIndicator = document.getElementById('tank-volume-indicator');
+        const tankPercentText = document.getElementById('tank-volume-percent');
+        if (tankIndicator && tankPercentText) {
+            if (data.tank_water_volume !== null && data.tank_water_volume !== undefined) {
+                const percentage = Math.max(0, Math.min(100, (data.tank_water_volume / MAX_TANK_VOLUME) * 100));
+                tankIndicator.style.height = percentage + '%';
+                tankPercentText.textContent = percentage.toFixed(0) + '%';
+                if (percentage < 10) tankIndicator.className = 'bg-danger';
+                else if (percentage < 25) tankIndicator.className = 'bg-warning';
+                else tankIndicator.className = 'bg-primary';
+            } else {
+                tankIndicator.style.height = '0%';
+                tankPercentText.textContent = '0%';
+                tankIndicator.className = 'bg-secondary';
+            }
+        }
+
+        const timestampElementTank = document.getElementById('last-updated-tank');
+        if (timestampElementTank) {
+            timestampElementTank.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A';
+        }
+    }
+
+    async function fetchTankData() {
+        try {
+            const response = await fetch("{{ url_for('api_tank_status') }}");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            updateTankData(data);
+        } catch (error) {
+            console.error("Fetch Tank Error:", error);
+            if (error.message.includes('401')) window.location.href = "{{ url_for('login') }}";
+            const tsElement = document.getElementById('last-updated-tank');
+            if (tsElement) tsElement.textContent = 'Error';
+        }
+    }
+
+    // --- Water Quality Update ---
+    function updateWaterQualityData(data) {
+        if (!data) return;
+        updateText('water-temp', data.water_temperature, '°C', 1);
+        updateText('water-ph', data.ph, '', 2);
+        updateText('water-ec', data.ec, 'µS/cm', 0);
+        updateText('water-tds', data.tds, 'mg/L', 0);
+        updateText('water-flow', data.flow_rate, 'L/min', 1);
+
+        const timestampElementWater = document.getElementById('last-updated-water');
+        if (timestampElementWater) {
+            timestampElementWater.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A';
+        }
+    }
+
+    async function fetchWaterQualityData() {
+        try {
+            const response = await fetch("{{ url_for('api_water_quality') }}");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            updateWaterQualityData(data);
+        } catch (error) {
+            console.error("Fetch Water Quality Error:", error);
+            if (error.message.includes('401')) window.location.href = "{{ url_for('login') }}";
+            const tsElement = document.getElementById('last-updated-water');
+            if (tsElement) tsElement.textContent = 'Error';
+        }
+    }
+
+    // --- Plant Environment Update ---
+    function updatePlantEnvData(data) {
+        if (!data) return;
+        updateText('plant-par', data.light_par, 'µmol/m²/s', 0);
+        updateText('plant-co2', data.co2_concentration, 'ppm', 0);
+        updateText('plant-air-temp', data.air_temperature, '°C', 1);
+        updateText('plant-soil-moisture', data.soil_moisture, '%', 0);
+        updateText('plant-soil-temp', data.soil_temperature, '°C', 1);
+
+        const timestampElementPlant = document.getElementById('last-updated-plant');
+        if (timestampElementPlant) {
+            timestampElementPlant.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A';
+        }
+    }
+
+     async function fetchPlantEnvData() {
+         try {
+            const response = await fetch("{{ url_for('api_plant_env') }}");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            updatePlantEnvData(data);
+        } catch (error) {
+            console.error("Fetch Plant Env Error:", error);
+            if (error.message.includes('401')) window.location.href = "{{ url_for('login') }}";
+            const tsElement = document.getElementById('last-updated-plant');
+            if (tsElement) tsElement.textContent = 'Error';
+        }
+    }    // --- Initial Fetch & Interval Setup ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Fetch all data initially
+        fetchOverviewData();
+        fetchSoilData();
+        fetchTankData();
+        fetchWaterQualityData();
+        fetchPlantEnvData();
+
+        // Set intervals for periodic refresh
+        setInterval(fetchOverviewData, REFRESH_INTERVAL);
+        setInterval(fetchSoilData, REFRESH_INTERVAL);
+        setInterval(fetchTankData, REFRESH_INTERVAL);
+        setInterval(fetchWaterQualityData, REFRESH_INTERVAL);
+        setInterval(fetchPlantEnvData, REFRESH_INTERVAL);
+    });
+    
+    // --- Temperature Color Change Function ---
+    function updateTemperatureCardColor(temp) {
+        const tempCard = document.getElementById('temp-card');
+        if (!tempCard || temp === null || temp === undefined || temp === '--') return;
+        
+        // Convert to number if it's a string
+        const temperature = typeof temp === 'string' ? parseFloat(temp) : temp;
+        
+        // Change background gradient based on temperature
+        if (temperature < 5) {
+            // Very cold - blue
+            tempCard.className = 'p-3 rounded-6 shadow-1-strong h-100';
+            tempCard.style.background = 'linear-gradient(40deg, #0099cc, #1976d2)';
+        } else if (temperature < 15) {
+            // Cool - light blue
+            tempCard.className = 'p-3 rounded-6 shadow-1-strong h-100';
+            tempCard.style.background = 'linear-gradient(40deg, #33b5e5, #3949ab)';
+        } else if (temperature < 25) {
+            // Moderate - green
+            tempCard.className = 'p-3 rounded-6 shadow-1-strong h-100';
+            tempCard.style.background = 'linear-gradient(40deg, #00c851, #007e33)';
+        } else if (temperature < 35) {
+            // Warm - orange
+            tempCard.className = 'p-3 rounded-6 shadow-1-strong h-100';
+            tempCard.style.background = 'linear-gradient(40deg, #ffbb33, #ff8800)';
+        } else {
+            // Hot - red
+            tempCard.className = 'p-3 rounded-6 shadow-1-strong h-100';
+            tempCard.style.background = 'linear-gradient(40deg, #ff5252, #b71c1c)';
+        }
+    }
+    
+    // Update the updateOverviewData function to call our temperature color update
+    const originalUpdateOverviewData = updateOverviewData;
+    updateOverviewData = function(data) {
+        originalUpdateOverviewData(data);
+        if (data && data.temperature !== undefined && data.temperature !== null) {
+            updateTemperatureCardColor(data.temperature);
+        }
+    };
+
+</script>
+{% endblock %}
