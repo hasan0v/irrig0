@@ -5,7 +5,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from app.database import db, init_app as init_db_app # Use alias to avoid name clash
 from app.models import User, SensorData, Device # Import the User, SensorData, and Device models
 from app.auth import login_required # Import the decorator
-from datetime import datetime  # Add datetime import for historical data
+from app.alarms_api import alarms_bp # Import the alarms blueprint
+from datetime import datetime, timedelta  # Add datetime and timedelta import for historical data
 
 # Load environment variables from .env file
 load_dotenv()
@@ -79,15 +80,17 @@ def api_overview_status():
         return jsonify(latest_data.to_dict())
     else:
         # Return empty object or default values if no data exists
+        # Use updated field names for consistency
         return jsonify({
             'timestamp': None,
-            'temperature': None,
+            'air_temperature': None, # Changed
             'humidity': None,
             'uv_intensity': None,
             'rainfall': None,
-            # Add other relevant fields with null/default values
-            'soil_moisture_level': None, # Added for consistency
-            'ph_level': None,            # Added for consistency
+            'atmospheric_pressure': None, # Added
+            'soil_moisture_level': None,
+            'soil_ph': None,            # Changed
+            # Add others as needed for a complete null response if desired
         })
 
 @app.route('/api/soil_status')
@@ -107,13 +110,15 @@ def api_soil_status():
         # Return only relevant fields for soil status
         return jsonify({
             'timestamp': timestamp,
-            'soil_temperature': latest_data.temperature, # Assuming temperature is soil temp for now (FR-DASH-B01) - Needs clarification
+            'soil_temperature': latest_data.soil_temperature, # Use specific soil_temperature (FR-DASH-B01)
             'soil_moisture_level': latest_data.soil_moisture_level, # FR-DASH-B02
-            'ph_level': latest_data.ph_level, # Assuming this is soil pH for now (FR-DASH-B03) - Needs clarification
-            # Placeholders for other soil data (EC, NPK, SAP) - FR-DASH-B04, B05, B06
-            'soil_ec': None,
-            'soil_npk': None,
-            'sap_moisture': None,
+            'ph_level': latest_data.soil_ph, # Use specific soil_ph (FR-DASH-B03)
+            # Use actual fields from model if available
+            'soil_ec': latest_data.soil_ec, # FR-DASH-B04
+            'soil_n': latest_data.soil_n,   # Part of FR-DASH-B05
+            'soil_p': latest_data.soil_p,   # Part of FR-DASH-B05
+            'soil_k': latest_data.soil_k,   # Part of FR-DASH-B05
+            'sap_moisture': latest_data.sap_moisture, # FR-DASH-B06
         })
     else:
         # Return empty object or default values if no data exists
@@ -121,9 +126,12 @@ def api_soil_status():
             'timestamp': None,
             'soil_temperature': None,
             'soil_moisture_level': None,
-            'ph_level': None,
+            # 'ph_level': None, # Remove old name
+            'soil_ph': None, # Keep updated name
             'soil_ec': None,
-            'soil_npk': None,
+            'soil_n': None,
+            'soil_p': None, # Changed from soil_npk
+            'soil_k': None, # Changed from soil_npk
             'sap_moisture': None,
         })
 
@@ -144,20 +152,20 @@ def api_tank_status():
         # Return only relevant fields for tank status
         return jsonify({
             'timestamp': timestamp,
-            'tank_water_volume': latest_data.tank_water_volume, # FR-DASH-E01 (Assuming clean tank)
-            'pump_pressure': latest_data.water_pressure, # FR-DASH-E03 (Assuming relevant pump)
-            # Placeholders for other tank data
-            'dirty_tank_volume': None, # FR-DASH-E02
-            'system_water_treatment_rate': None, # FR-DASH-E04
+            'tank_water_volume': latest_data.tank_water_volume, # FR-DASH-E01
+            'pump_pressure': latest_data.water_pressure, # FR-DASH-E03 - Corrected model name is water_pressure
+            # Populate actual data for fields previously placeholders
+            'dirty_tank_volume': latest_data.dirty_water_volume, # FR-DASH-E02 - Use actual data
+            'system_water_treatment_rate': latest_data.treatment_rate, # FR-DASH-E04 - Use actual data (treatment_rate)
         })
     else:
         # Return empty object or default values if no data exists
         return jsonify({
             'timestamp': None,
             'tank_water_volume': None,
-            'pump_pressure': None,
+            'pump_pressure': None, # Corresponds to water_pressure
             'dirty_tank_volume': None,
-            'system_water_treatment_rate': None,
+            'system_water_treatment_rate': None, # Corresponds to treatment_rate
         })
 
 @app.route('/api/water_quality')
@@ -175,24 +183,24 @@ def api_water_quality():
         else:
             timestamp = latest_data.timestamp
             
-    # Try to use existing ambiguous fields if they *might* represent water data
-    water_temp = latest_data.temperature if latest_data else None # Needs clarification
-    water_ph = latest_data.ph_level if latest_data else None # Needs clarification
+    # Use specific water quality fields from the updated model
+    water_temp = latest_data.water_temperature if latest_data else None
+    water_ph = latest_data.water_ph if latest_data else None
 
     return jsonify({
         'timestamp': timestamp,
-        # Core items from STORY-007 / FR-DASH-C
-        'water_temperature': water_temp, # FR-DASH-C01 (Source TBD)
-        'ph': water_ph,                  # FR-DASH-C02 (Source TBD)
-        'ec': None,                      # FR-DASH-C03 (Source TBD)
-        'tds': None,                     # FR-DASH-C04 (Source TBD)
-        'flow_rate': None,               # FR-DASH-C13 (Source TBD)
-        # Other placeholders from FR-DASH-C
-        'ntu': None,
-        'ammonia': None,
-        'nitrate': None,
-        'phosphate': None,
-        'potassium': None,
+        # Core items from STORY-007 / FR-DASH-C - Populate with actual data
+        'water_temperature': water_temp, # FR-DASH-C01
+        'ph': water_ph,                  # FR-DASH-C02 - Use water_ph
+        'ec': latest_data.water_ec if latest_data else None, # FR-DASH-C03 - Use actual data
+        'tds': latest_data.water_tds if latest_data else None, # FR-DASH-C04 - Use actual data
+        'flow_rate': latest_data.water_flow_rate if latest_data else None, # FR-DASH-C13 - Use actual data
+        # Other placeholders from FR-DASH-C - Populate with actual data
+        'ntu': latest_data.water_ntu if latest_data else None, # Use actual data
+        'ammonia': latest_data.water_nh3 if latest_data else None, # Use actual data (nh3)
+        'nitrate': latest_data.water_no3 if latest_data else None, # Use actual data (no3)
+        # 'phosphate': None, # Not in current model
+        # 'potassium': None, # Not in current model
         'sulfate': None,
         # etc.
     })
@@ -212,18 +220,19 @@ def api_plant_env():
         else:
             timestamp = latest_data.timestamp
             
-    air_temp = latest_data.temperature if latest_data else None # FR-DASH-D03 (Assuming air temp)
+    # Use specific fields from the updated model
+    air_temp = latest_data.air_temperature if latest_data else None # FR-DASH-D03
     soil_moisture = latest_data.soil_moisture_level if latest_data else None # FR-DASH-D04
-    soil_temp = latest_data.temperature if latest_data else None # FR-DASH-D05 (Assuming soil temp - ambiguous)
+    soil_temp = latest_data.soil_temperature if latest_data else None # FR-DASH-D05
 
     return jsonify({
         'timestamp': timestamp,
-        # Items from STORY-008 / FR-DASH-D
-        'light_par': None,              # FR-DASH-D01 (Source TBD)
-        'co2_concentration': None,      # FR-DASH-D02 (Source TBD)
-        'air_temperature': air_temp,
-        'soil_moisture': soil_moisture, # Cross-ref B02
-        'soil_temperature': soil_temp,  # Cross-ref B01
+        # Items from STORY-008 / FR-DASH-D - Populate with actual data
+        'light_par': latest_data.light_par if latest_data else None, # FR-DASH-D01 - Use actual data
+        'co2_concentration': latest_data.co2_concentration if latest_data else None, # FR-DASH-D02 - Use actual data
+        'air_temperature': air_temp,    # Already corrected
+        'soil_moisture': soil_moisture, # Already correct
+        'soil_temperature': soil_temp,  # Already corrected
     })
 
 @app.route('/api/devices')
@@ -447,12 +456,134 @@ def control():
     """Renders the device control page."""
     return render_template('control.html')
 
+# Dashboard data API endpoint for history page
+@app.route('/api/history_dashboard')
+@login_required
+def api_history_dashboard():
+    """API endpoint to get summary data for the history page dashboard."""
+    try:
+        # Get total count of data points
+        total_points = SensorData.query.count()
+        
+        # Get the number of active sensors (with data in the last 24 hours)
+        one_day_ago = datetime.now() - timedelta(days=1)
+        recent_data = SensorData.query.filter(SensorData.timestamp >= one_day_ago).order_by(SensorData.timestamp.desc()).first()
+        
+        # Count non-null values in the most recent record as "active sensors"
+        active_sensors = 0
+        if recent_data:
+            # Convert to dictionary and count non-null values
+            recent_dict = recent_data.to_dict()
+            active_sensors = sum(1 for k, v in recent_dict.items() 
+                             if k != 'timestamp' and v is not None and v != "")
+        
+        # Get timestamp range
+        first_record = SensorData.query.order_by(SensorData.timestamp.asc()).first()
+        last_record = SensorData.query.order_by(SensorData.timestamp.desc()).first()
+        
+        # Calculate time range
+        time_range = None
+        last_update = None
+        if first_record and last_record:
+            time_range = {
+                'start': first_record.timestamp.isoformat() if hasattr(first_record.timestamp, 'isoformat') else str(first_record.timestamp),
+                'end': last_record.timestamp.isoformat() if hasattr(last_record.timestamp, 'isoformat') else str(last_record.timestamp),
+            }
+            last_update = time_range['end']
+        
+        # Get top 5 sensors with most recent data for trend chart
+        top_sensors = []
+        if last_record:
+            data_dict = last_record.to_dict()
+            # Filter out non-numeric and empty values
+            top_sensors = [k for k, v in data_dict.items() 
+                          if k != 'timestamp' and v is not None and v != "" and isinstance(v, (int, float))][:5]
+        
+        # Get trend data for last 24 hours
+        trend_data = []
+        if top_sensors:
+            recent_records = SensorData.query.filter(SensorData.timestamp >= one_day_ago).order_by(SensorData.timestamp.asc()).all()
+            if recent_records:
+                trend_data = {
+                    'timestamps': [r.timestamp.isoformat() if hasattr(r.timestamp, 'isoformat') else str(r.timestamp) for r in recent_records],
+                    'sensors': {sensor: [getattr(r, sensor) for r in recent_records] for sensor in top_sensors}
+                }
+        
+        # Get category distribution
+        category_counts = {
+            'Genel Hava Durumu': 0,
+            'Toprak Koşulları': 0,
+            'Su Kalitesi': 0,
+            'Bitki Ortamı': 0,
+            'Tank Durumu': 0,
+            'Diğer': 0
+        }
+        
+        # Simple mapping of sensors to categories
+        sensor_to_category = {
+            'air_temperature': 'Genel Hava Durumu',
+            'humidity': 'Genel Hava Durumu',
+            'atmospheric_pressure': 'Genel Hava Durumu',
+            'soil_moisture_level': 'Toprak Koşulları',
+            'soil_temperature': 'Toprak Koşulları',
+            'soil_ph': 'Toprak Koşulları',
+            'soil_ec': 'Toprak Koşulları',
+            'water_ph': 'Su Kalitesi',
+            'water_temperature': 'Su Kalitesi',
+            'water_ec': 'Su Kalitesi',
+            'tank_water_volume': 'Tank Durumu',
+            'water_pressure': 'Tank Durumu',
+            'light_par': 'Bitki Ortamı',
+            'co2_concentration': 'Bitki Ortamı'
+        }
+        
+        # Count non-null values for each category
+        if last_record:
+            data_dict = last_record.to_dict()
+            for sensor, value in data_dict.items():
+                if sensor != 'timestamp' and value is not None and value != "":
+                    category = sensor_to_category.get(sensor, 'Diğer')
+                    category_counts[category] += 1
+        
+        # Filter out empty categories
+        category_distribution = {k: v for k, v in category_counts.items() if v > 0}
+        
+        # Return all dashboard data
+        return jsonify({
+            'success': True,
+            'data': {
+                'total_points': total_points,
+                'active_sensors': active_sensors,
+                'last_update': last_update,
+                'time_range': time_range,
+                'trend_data': trend_data,
+                'category_distribution': category_distribution
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 # History page route (TASK-061)
 @app.route('/history')
 @login_required
 def history():
     """Renders the historical data page."""
     return render_template('history.html')
+
+@app.route('/alarms')
+@login_required
+def alarms():
+    """Renders the alarms management page."""
+    return render_template('alarms.html')
+
+
+# Register blueprints
+app.register_blueprint(alarms_bp)
+# Note: Register other blueprints like auth_bp and dashboard_api_bp if they exist and are needed.
+# Assuming they might be registered elsewhere or implicitly handled for now.
 
 
 # --- Authentication Routes ---
@@ -572,13 +703,13 @@ def check_safety_interlocks(device, action):
                 
     # Valve interlock example
     if 'VALVE' in device_type:
-        # Example: Don't allow opening drainage valve if water quality is poor
-        if action.upper() == 'OPEN' and 'DRAIN' in device_type and latest_data.ph_level is not None:
+        # Example: Don't allow opening drainage valve if water quality is poor (use water_ph)
+        if action.upper() == 'OPEN' and 'DRAIN' in device_type and latest_data.water_ph is not None:
             # Example condition: pH too high or too low
-            if latest_data.ph_level < 5 or latest_data.ph_level > 9:
+            if latest_data.water_ph < 5 or latest_data.water_ph > 9: # Check against water_ph
                 result['blocked'] = True
-                result['reason'] = f'Water pH level unsafe: {latest_data.ph_level}'
-                result['conditions']['ph_level'] = latest_data.ph_level
+                result['reason'] = f'Water pH level unsafe: {latest_data.water_ph}'
+                result['conditions']['water_ph'] = latest_data.water_ph # Report water_ph
                 return result
     
     # Add other device-specific checks as needed...

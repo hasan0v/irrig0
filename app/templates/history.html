@@ -4,19 +4,86 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h1 class="mt-4">Geçmiş Veriler</h1>
-    <p>Sensor verilerinin geçmiş kayıtlarını görüntüleyin.</p>
-
-    <!-- Control panel for chart configuration -->
+    <h1 class="mt-4 mb-4">Geçmiş Veriler</h1>
+    
+    <!-- Visual Dashboard Section -->
     <div class="row mb-4">
-        <div class="col-md-12">
+        <div class="col-12">
             <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Veri Özeti Gösterge Paneli</h5>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary" id="refresh-dashboard-btn">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Yenile
+                        </button>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <form id="history-form" class="row g-3">
-                        <!-- Time range selection -->
-                        <div class="col-md-4">
-                            <label for="time-range" class="form-label">Zaman Aralığı</label>
-                            <select id="time-range" class="form-select">
+                    <div id="dashboard-loading" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Gösterge paneli yükleniyor...</p>
+                    </div>
+                    <div id="dashboard-content">
+                        <div class="row">
+                            <!-- Quick Stats Cards -->
+                            <div class="col-12 mb-4">
+                                <div class="row" id="quick-stats-cards">
+                                    <!-- Cards will be generated dynamically -->
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="card bg-primary text-white h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Toplam Veri Noktası</h6>
+                                                <h3 class="display-6" id="stat-total-points">--</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="card bg-success text-white h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Aktif Sensörler</h6>
+                                                <h3 class="display-6" id="stat-active-sensors">--</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="card bg-info text-white h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Son Güncelleme</h6>
+                                                <h3 class="h5" id="stat-last-update">--</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="card bg-warning text-white h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Veri Zaman Aralığı</h6>
+                                                <h3 class="h5" id="stat-time-range">--</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>                            </div>
+                            <!-- Tüm grafikler kaldırıldı -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <!-- Left Column: Filters -->
+        <div class="col-lg-3 mb-4">
+            <div class="card sticky-lg-top" style="top: 80px;"> {# Make controls sticky on large screens #}
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-filter me-2"></i>Filtreler</h5>
+                </div>
+                <div class="card-body">
+                    <form id="history-form">
+                        <!-- Time Range -->
+                        <div class="mb-3">
+                            <label for="time-range" class="form-label fw-bold">Zaman Aralığı</label>
+                            <select id="time-range" class="form-select form-select-sm">
                                 <option value="1h">Son 1 Saat</option>
                                 <option value="6h">Son 6 Saat</option>
                                 <option value="12h">Son 12 Saat</option>
@@ -27,62 +94,75 @@
                                 <option value="custom">Özel Tarih Aralığı</option>
                             </select>
                         </div>
-                        
-                        <!-- Custom date range (initially hidden) -->
-                        <div class="col-md-8" id="custom-range-container" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label for="start-time" class="form-label">Başlangıç</label>
-                                    <input type="datetime-local" id="start-time" class="form-control">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="end-time" class="form-label">Bitiş</label>
-                                    <input type="datetime-local" id="end-time" class="form-control">
-                                </div>
+                        <div id="custom-range-container" class="mb-3" style="display: none;">
+                            <label class="form-label small">Özel Aralık:</label>
+                            <div class="input-group input-group-sm mb-1">
+                                <span class="input-group-text" style="width: 40px;">Başl.</span>
+                                <input type="datetime-local" id="start-time-filter" class="form-control form-control-sm">
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" style="width: 40px;">Bitiş</span>
+                                <input type="datetime-local" id="end-time-filter" class="form-control form-control-sm">
                             </div>
                         </div>
-                        
-                        <!-- Sensor selection -->
-                        <div class="col-md-12">
-                            <label class="form-label">Sensörler</label>
-                            <div class="row" id="sensor-checkboxes">
-                                <!-- Checkboxes will be generated by JavaScript -->
-                                <div class="col-12">
-                                    <p class="text-muted small">Sensörler yükleniyor...</p>
-                                </div>
+
+                        <hr>
+
+                        <!-- Category Selection -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Kategoriler</label>
+                            <div id="category-selection-area">
+                                <!-- Category checkboxes will be generated here -->
+                                <p class="text-muted small">Kategoriler yükleniyor...</p>
                             </div>
                         </div>
-                        
-                        <!-- Button group -->
-                        <div class="col-12 d-flex justify-content-end">
-                            <button type="button" class="btn btn-primary" id="update-chart-btn">
+
+                        <hr>
+
+                        <!-- Sensor Selection (Dynamic) -->
+                        <div class="mb-3">
+                             <label class="form-label fw-bold">Sensörler</label>
+                             <div id="sensor-selection-area" style="max-height: 250px; overflow-y: auto;">
+                                 <!-- Sensor checkboxes generated based on selected categories -->
+                                 <p class="text-muted small">Lütfen önce kategori seçin.</p>
+                             </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Update Button -->
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary btn-sm" id="update-chart-btn">
                                 <i class="bi bi-graph-up me-1"></i> Grafiği Güncelle
                             </button>
-                            <button type="button" class="btn btn-outline-secondary ms-2" id="export-csv-btn" disabled>
-                                <i class="bi bi-download me-1"></i> CSV İndir
-                            </button>
+                        </div>
+                        <div class="d-grid mt-2">
+                             <button type="button" class="btn btn-outline-secondary btn-sm" id="export-csv-btn" disabled>
+                                 <i class="bi bi-download me-1"></i> CSV İndir
+                             </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Chart display area -->
-    <div class="row">
-        <div class="col-md-12">
+
+        <!-- Right Column: Chart -->
+        <div class="col-lg-9">
             <div class="card">
+                 <div class="card-header">
+                     <h5 class="mb-0">Sensör Grafiği</h5>
+                 </div>
                 <div class="card-body">
-                    <div id="chart-container" style="height: 400px;">
-                        <div id="chart-loading" class="d-flex justify-content-center align-items-center h-100">
+                    <div id="chart-container" style="position: relative; height: 50vh; min-height: 400px;">
+                        <div id="chart-loading" class=" justify-content-center align-items-center h-100 position-absolute top-0 start-0 w-100" style="background-color: rgba(255,255,255,0.8); z-index: 10;">
                             <div class="text-center">
                                 <div class="spinner-border text-primary mb-3" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
-                                <p class="text-muted">Lütfen sensörleri ve zaman aralığını seçin...</p>
+                                <p class="text-muted">Lütfen filtreleri seçip 'Güncelle' butonuna basın.</p>
                             </div>
                         </div>
-                        <canvas id="history-chart" style="display: none;"></canvas>
+                        <canvas id="history-chart"></canvas> {# Removed display:none #}
                     </div>
                 </div>
             </div>
@@ -92,15 +172,13 @@
     <!-- Data summary section -->
     <div class="row mt-4">
         <div class="col-md-12">
-            <div class="card">
+            <div class="card mt-4"> {# Added margin top #}
                 <div class="card-header">
                     <h5 class="mb-0">Veri Özeti</h5>
                 </div>
                 <div class="card-body">
                     <div id="data-summary" class="row">
-                        <div class="col-12">
-                            <p class="text-muted text-center">Veri gösterilemiyor. Lütfen önce bir grafik oluşturun.</p>
-                        </div>
+                        <p class="text-muted text-center">Grafik oluşturulduktan sonra seçilen sensörlerin özeti burada gösterilecektir.</p>
                     </div>
                 </div>
             </div>
@@ -112,242 +190,362 @@
 {% block scripts %}
 <!-- Include Chart.js library -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<!-- Add required Chart.js date adapter for timeline chart -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<!-- Optional: Include a date range picker library like Litepicker -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script> -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css"/> -->
 
 <script>
+    // Tarih formatı fonksiyonu - Son Güncelleme için daha okunaklı gösterim
+    function formatTurkishDate(dateStr) {
+        if (!dateStr) return '--';
+        
+        const date = new Date(dateStr);
+        
+        // Tarih formatı: 24 Nisan 2025, 15:30
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        
+        return date.toLocaleDateString('tr-TR', options);
+    }
+
+    // --- Configuration ---
+    const sensorCategories = {
+      'Genel Hava Durumu': {
+          color: '#6c757d', // Secondary (grey)
+          sensors: {
+              'air_temperature': { name: 'Hava Sıcaklığı', unit: '°C' },
+              'humidity': { name: 'Nem', unit: '%' },
+              'atmospheric_pressure': { name: 'Basınç', unit: 'hPa' },
+              'uv_intensity': { name: 'UV Yoğunluğu', unit: '' },
+              'rainfall': { name: 'Yağış', unit: 'mm' }
+          }
+      },
+      'Toprak Koşulları': {
+          color: '#198754', // Green
+          sensors: {
+              'soil_temperature': { name: 'Toprak Sıcaklığı', unit: '°C' },
+              'soil_moisture_level': { name: 'Toprak Nemi', unit: '%' },
+              'soil_ph': { name: 'Toprak pH', unit: '' },
+              'soil_ec': { name: 'Toprak EC', unit: 'µS/cm' },
+              'sap_moisture': { name: 'SAP Nemi', unit: '%' }
+          }
+      },
+      'Toprak Besinleri': {
+          color: '#fd7e14', // Orange
+          sensors: {
+              'soil_n': { name: 'Azot (N)', unit: 'mg/kg' },
+              'soil_p': { name: 'Fosfor (P)', unit: 'mg/kg' },
+              'soil_k': { name: 'Potasyum (K)', unit: 'mg/kg' }
+          }
+      },
+      'Su Tankı': {
+          color: '#0dcaf0', // Info (cyan)
+          sensors: {
+              'tank_water_volume': { name: 'Temiz Su Hacmi', unit: 'L' },
+              'dirty_water_volume': { name: 'Kirli Su Hacmi', unit: 'L' },
+              'water_pressure': { name: 'Su Basıncı', unit: 'bar' },
+              'treatment_rate': { name: 'Arıtma Hızı', unit: 'L/min' }
+          }
+      },
+      'Su Kalitesi': {
+          color: '#0d6efd', // Primary (blue)
+          sensors: {
+              'water_temperature': { name: 'Su Sıcaklığı', unit: '°C' },
+              'water_ph': { name: 'Su pH', unit: '' },
+              'water_ec': { name: 'Su EC', unit: 'µS/cm' },
+              'water_tds': { name: 'Su TDS', unit: 'mg/L' },
+              'water_ntu': { name: 'Su Bulanıklık (NTU)', unit: '' },
+              'water_nh3': { name: 'Amonyak (NH₃)', unit: 'mg/L' },
+              'water_no3': { name: 'Nitrat (NO₃)', unit: 'mg/L' },
+              'water_flow_rate': { name: 'Su Debisi', unit: 'L/min' }
+          }
+      },
+      'Bitki Ortamı': {
+          color: '#ffc107', // Warning (yellow)
+          sensors: {
+              'light_par': { name: 'Işık (PAR)', unit: 'µmol/m²/s' },
+              'co2_concentration': { name: 'CO₂ Konsantrasyonu', unit: 'ppm' }
+          }
+      }
+    };
+
+    // Color palette for chart lines (use more distinct colors if needed)
+    const chartColors = [
+        'rgb(255, 99, 132)', 'rgb(54, 162, 235)', 'rgb(75, 192, 192)',
+        'rgb(255, 159, 64)', 'rgb(153, 102, 255)', 'rgb(255, 205, 86)',
+        'rgb(201, 203, 207)', 'rgb(0, 128, 0)', 'rgb(128, 0, 128)',
+        'rgb(0, 128, 128)', 'rgb(255, 0, 255)', 'rgb(0, 0, 128)'
+    ];
+
     // DOM elements
     const timeRangeSelect = document.getElementById('time-range');
     const customRangeContainer = document.getElementById('custom-range-container');
-    const startTimeInput = document.getElementById('start-time');
-    const endTimeInput = document.getElementById('end-time');
-    const sensorCheckboxesContainer = document.getElementById('sensor-checkboxes');
+    const startTimeInput = document.getElementById('start-time-filter'); // Updated ID
+    const endTimeInput = document.getElementById('end-time-filter');   // Updated ID
+    const categorySelectionArea = document.getElementById('category-selection-area');
+    const sensorSelectionArea = document.getElementById('sensor-selection-area');
     const updateChartBtn = document.getElementById('update-chart-btn');
     const exportCsvBtn = document.getElementById('export-csv-btn');
     const chartContainer = document.getElementById('chart-container');
     const chartLoading = document.getElementById('chart-loading');
-    const historyChart = document.getElementById('history-chart');
+    const historyChartCanvas = document.getElementById('history-chart'); // Renamed variable
     const dataSummary = document.getElementById('data-summary');
-    
-    // Available sensors and their display names
-    const availableSensors = [
-        { id: 'temperature', name: 'Sıcaklık', unit: '°C', color: 'rgb(255, 99, 132)' },
-        { id: 'humidity', name: 'Nem', unit: '%', color: 'rgb(54, 162, 235)' },
-        { id: 'soil_moisture_level', name: 'Toprak Nemi', unit: '%', color: 'rgb(75, 192, 192)' },
-        { id: 'ph_level', name: 'pH Seviyesi', unit: '', color: 'rgb(153, 102, 255)' },
-        { id: 'uv_intensity', name: 'UV Yoğunluğu', unit: '', color: 'rgb(255, 159, 64)' },
-        { id: 'rainfall', name: 'Yağış', unit: 'mm', color: 'rgb(201, 203, 207)' },
-        { id: 'tank_water_volume', name: 'Tank Su Seviyesi', unit: 'L', color: 'rgb(0, 128, 255)' },
-        { id: 'water_pressure', name: 'Su Basıncı', unit: 'bar', color: 'rgb(0, 102, 204)' }
-    ];
-    
+
     // Chart instance
-    let chart = null;
+    let historyChart = null; // Renamed variable
     // Current chart data
-    let currentData = null;
-    
-    // Initialize
+    let currentData = null;    // --- Initialization ---
     document.addEventListener('DOMContentLoaded', function() {
-        // Populate sensor checkboxes
-        populateSensorCheckboxes();
+        // First load the dashboard data
+        fetchDashboardData();
         
-        // Set up event listeners
+        // Setup refresh button for dashboard
+        document.getElementById('refresh-dashboard-btn').addEventListener('click', fetchDashboardData);
+        
+        populateCategoryCheckboxes(); // Populate categories first
         setupEventListeners();
-        
-        // Initialize default time values
         initializeTimeInputs();
-    });
-    
-    function populateSensorCheckboxes() {
-        sensorCheckboxesContainer.innerHTML = '';
-        
-        // Create a row with 3 columns per row for checkboxes
-        availableSensors.forEach((sensor, index) => {
-            if (index % 3 === 0) {
-                // Create a new row for every 3 sensors
-                currentRow = document.createElement('div');
-                currentRow.className = 'row mb-2';
-                sensorCheckboxesContainer.appendChild(currentRow);
+
+        // --- Default Chart Load ---
+        // Pre-select default categories and sensors
+        const defaultCategories = ['Genel Hava Durumu', 'Toprak Koşulları'];
+        const defaultSensors = ['air_temperature', 'soil_moisture_level'];
+
+        document.querySelectorAll('.category-checkbox').forEach(cb => {
+            if (defaultCategories.includes(cb.value)) {
+                cb.checked = true;
             }
-            
-            // Create column
-            const col = document.createElement('div');
-            col.className = 'col-md-4';
-            
-            // Create checkbox with label
-            const checkboxId = `sensor-${sensor.id}`;
-            const checkbox = document.createElement('div');
-            checkbox.className = 'form-check';
-            checkbox.innerHTML = `
-                <input class="form-check-input sensor-checkbox" type="checkbox" id="${checkboxId}" value="${sensor.id}">
-                <label class="form-check-label" for="${checkboxId}">
-                    ${sensor.name} <small class="text-muted">(${sensor.unit})</small>
-                </label>
-            `;
-            
-            col.appendChild(checkbox);
-            sensorCheckboxesContainer.lastChild.appendChild(col);
         });
-        
-        // Pre-select temperature and humidity by default
-        if (document.getElementById('sensor-temperature')) {
-            document.getElementById('sensor-temperature').checked = true;
+        populateSensorCheckboxes(); // Populate sensors based on default categories
+        document.querySelectorAll('#sensor-selection-area .sensor-checkbox').forEach(cb => {
+             if (defaultSensors.includes(cb.value)) {
+                 cb.checked = true;
+             }
+        });
+
+        // Trigger initial chart load
+        fetchAndUpdateChart();
+    });
+
+    // --- UI Population ---
+    function populateCategoryCheckboxes() {
+        categorySelectionArea.innerHTML = ''; // Clear loading message
+        Object.keys(sensorCategories).forEach((categoryName, index) => {
+            const categoryId = `category-${index}`;
+            const div = document.createElement('div');
+            div.className = 'form-check form-check-inline';
+            div.innerHTML = `
+                <input class="form-check-input category-checkbox" type="checkbox" id="${categoryId}" value="${categoryName}">
+                <label class="form-check-label small" for="${categoryId}">${categoryName}</label>
+            `;
+            categorySelectionArea.appendChild(div);
+        });
+        // Add event listener to category checkboxes *after* they are created
+        categorySelectionArea.addEventListener('change', populateSensorCheckboxes);
+    }
+
+    function populateSensorCheckboxes() {
+        sensorSelectionArea.innerHTML = ''; // Clear previous sensors or placeholder
+        const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+                                       .map(cb => cb.value);
+
+        if (selectedCategories.length === 0) {
+            sensorSelectionArea.innerHTML = '<p class="text-muted small">Lütfen önce kategori seçin.</p>';
+            return;
         }
-        if (document.getElementById('sensor-humidity')) {
-            document.getElementById('sensor-humidity').checked = true;
+
+        let sensorCount = 0;
+        selectedCategories.forEach(categoryName => {
+            const category = sensorCategories[categoryName];
+            if (category && category.sensors) {
+                Object.entries(category.sensors).forEach(([sensorId, sensorInfo]) => {
+                    sensorCount++;
+                    const checkboxId = `sensor-${sensorId}`;
+                    const div = document.createElement('div');
+                    div.className = 'form-check';
+                    div.innerHTML = `
+                        <input class="form-check-input sensor-checkbox" type="checkbox" id="${checkboxId}" value="${sensorId}">
+                        <label class="form-check-label small" for="${checkboxId}">
+                            ${sensorInfo.name} ${sensorInfo.unit ? `<span class="text-muted">(${sensorInfo.unit})</span>` : ''}
+                        </label>
+                    `;
+                    sensorSelectionArea.appendChild(div);
+                });
+            }
+        });
+
+        if (sensorCount === 0) {
+             sensorSelectionArea.innerHTML = '<p class="text-muted small">Seçili kategorilerde sensör bulunamadı.</p>';
         }
     }
-    
+
+    // --- Event Listeners ---
     function setupEventListeners() {
-        // Time range change event
         timeRangeSelect.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                customRangeContainer.style.display = 'block';
-            } else {
-                customRangeContainer.style.display = 'none';
-                // Auto-update chart when selecting a preset time range
-                updateChart();
-            }
+            customRangeContainer.style.display = (this.value === 'custom') ? 'block' : 'none';
         });
-        
-        // Update chart button
-        updateChartBtn.addEventListener('click', updateChart);
-        
-        // Export CSV button
+        // Note: Category change listener is added in populateCategoryCheckboxes
+        updateChartBtn.addEventListener('click', fetchAndUpdateChart);
         exportCsvBtn.addEventListener('click', exportCSV);
     }
-    
-    function initializeTimeInputs() {
-        // Set default end time to now
+
+    // --- Time Input Handling ---
+     function initializeTimeInputs() {
         const now = new Date();
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+
+        // Set default values for custom range picker
         endTimeInput.value = formatDateTimeForInput(now);
-        
-        // Set default start time to 24 hours ago
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
         startTimeInput.value = formatDateTimeForInput(yesterday);
     }
-    
+
     function formatDateTimeForInput(date) {
-        return `${date.getFullYear()}-${padZero(date.getMonth() + 1)}-${padZero(date.getDate())}T${padZero(date.getHours())}:${padZero(date.getMinutes())}`;
+        // Adjust for local timezone offset before formatting
+        const offset = date.getTimezoneOffset() * 60000; // Offset in milliseconds
+        const localDate = new Date(date.getTime() - offset);
+        return localDate.toISOString().slice(0, 16); // Format for datetime-local
     }
-    
-    function padZero(num) {
+
+    function padZero(num) { // Keep for potential future use, though formatDateTimeForInput handles it now
         return num.toString().padStart(2, '0');
     }
-    
-    async function updateChart() {
-        // Show loading state
-        historyChart.style.display = 'none';
+
+    // --- Chart Logic ---
+    async function fetchAndUpdateChart() {
+        // Show loading state & remove loaded class from container
+        chartContainer.classList.remove('chart-loaded'); // Remove class first
         chartLoading.style.display = 'flex';
         chartLoading.querySelector('p').textContent = 'Veriler yükleniyor...';
-        
+        if (historyChart) historyChart.destroy(); // Clear previous chart immediately
+        historyChartCanvas.style.display = 'none'; // Hide canvas while loading
+        dataSummary.innerHTML = ''; // Clear summary
+        exportCsvBtn.disabled = true; // Disable export
+
         try {
             // Get selected sensors
-            const selectedSensors = Array.from(document.querySelectorAll('.sensor-checkbox:checked'))
+            const selectedSensors = Array.from(document.querySelectorAll('#sensor-selection-area .sensor-checkbox:checked'))
                 .map(checkbox => checkbox.value);
-            
+
             if (selectedSensors.length === 0) {
-                chartLoading.querySelector('p').textContent = 'Lütfen en az bir sensör seçin';
+                chartLoading.querySelector('p').textContent = 'Lütfen en az bir sensör seçin.';
                 return;
             }
-            
+
             // Get time range
-            let startTime, endTime;
-            
+            let startTimeISO, endTimeISO;
             if (timeRangeSelect.value === 'custom') {
-                startTime = startTimeInput.value;
-                endTime = endTimeInput.value;
-                
-                if (!startTime || !endTime) {
-                    chartLoading.querySelector('p').textContent = 'Lütfen tarih aralığını belirtin';
+                if (!startTimeInput.value || !endTimeInput.value) {
+                    chartLoading.querySelector('p').textContent = 'Lütfen özel tarih aralığını tam olarak belirtin.';
                     return;
                 }
+                // Convert local datetime-local value to UTC ISO string
+                startTimeISO = new Date(startTimeInput.value).toISOString();
+                endTimeISO = new Date(endTimeInput.value).toISOString();
             } else {
-                // Calculate time range based on selection
-                endTime = new Date();
-                startTime = new Date();
-                
+                const now = new Date();
+                endTimeISO = now.toISOString();
+                let start = new Date(now);
                 switch (timeRangeSelect.value) {
-                    case '1h': startTime.setHours(endTime.getHours() - 1); break;
-                    case '6h': startTime.setHours(endTime.getHours() - 6); break;
-                    case '12h': startTime.setHours(endTime.getHours() - 12); break;
-                    case '24h': startTime.setDate(endTime.getDate() - 1); break;
-                    case '3d': startTime.setDate(endTime.getDate() - 3); break;
-                    case '7d': startTime.setDate(endTime.getDate() - 7); break;
-                    case '30d': startTime.setDate(endTime.getDate() - 30); break;
+                    case '1h': start.setHours(now.getHours() - 1); break;
+                    case '6h': start.setHours(now.getHours() - 6); break;
+                    case '12h': start.setHours(now.getHours() - 12); break;
+                    case '24h': start.setDate(now.getDate() - 1); break;
+                    case '3d': start.setDate(now.getDate() - 3); break;
+                    case '7d': start.setDate(now.getDate() - 7); break;
+                    case '30d': start.setDate(now.getDate() - 30); break;
                 }
-                
-                startTime = startTime.toISOString();
-                endTime = endTime.toISOString();
+                startTimeISO = start.toISOString();
             }
-            
+
             // Fetch historical data
-            const response = await fetch(`{{ url_for('api_historical_data') }}?sensors=${selectedSensors.join(',')}&start_time=${startTime}&end_time=${endTime}`);
-            
+            const apiUrl = `{{ url_for('api_historical_data') }}?sensors=${selectedSensors.join(',')}&start_time=${startTimeISO}&end_time=${endTimeISO}`;
+            const response = await fetch(apiUrl);
+
             if (!response.ok) {
-                if (response.status === 401) {
-                    window.location.href = "{{ url_for('login') }}";
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 401) window.location.href = "{{ url_for('login') }}";
+                const errorData = await response.json().catch(() => ({ error: 'Bilinmeyen sunucu hatası' }));
+                throw new Error(`HTTP ${response.status}: ${errorData.error || 'API isteği başarısız'}`);
             }
-            
+
             const data = await response.json();
-            currentData = data; // Store for possible export
-            
-            // Enable export button if we have data
-            exportCsvBtn.disabled = data.timestamps.length === 0;
-            
-            if (data.timestamps.length === 0) {
-                chartLoading.querySelector('p').textContent = 'Seçilen zaman aralığında veri bulunamadı';
+            currentData = data; // Store for export
+
+            if (!data.timestamps || data.timestamps.length === 0) {
+                chartLoading.querySelector('p').textContent = 'Seçilen kriterlere uygun veri bulunamadı.';
+                exportCsvBtn.disabled = true;
                 return;
             }
-            
-            // Render chart
-            renderChart(data, selectedSensors);
-            
-            // Update data summary
+
+            // Render chart and update summary
+            renderHistoryChart(data, selectedSensors);
             updateDataSummary(data, selectedSensors);
-            
+            exportCsvBtn.disabled = false; // Enable export
+
         } catch (error) {
-            console.error('Error fetching historical data:', error);
-            chartLoading.querySelector('p').textContent = 'Veriler yüklenirken hata oluştu: ' + error.message;
+            console.error('Grafik güncelleme hatası:', error);
+            chartLoading.querySelector('p').textContent = `Hata: ${error.message}`;
+            exportCsvBtn.disabled = true;
+            // Ensure loading overlay is visible if error/no data message is shown
+            if (historyChartCanvas.style.display !== 'block') {
+                 chartLoading.style.display = 'flex';
+            }
+        } finally {
+           // No visibility changes needed here anymore, handled by CSS or ender function
         }
     }
-    
-    function renderChart(data, selectedSensors) {
-        // Format dates for display
-        const formattedDates = data.timestamps.map(timestamp => {
-            const date = new Date(timestamp);
-            return date.toLocaleString();
-        });
-        
+
+    function renderHistoryChart(data, selectedSensors) {
+        const ctx = historyChartCanvas.getContext('2d');
+
+        // Format dates for display (using local time)
+        const formattedDates = data.timestamps.map(timestamp => new Date(timestamp).toLocaleString());
+
         // Prepare datasets
-        const datasets = selectedSensors.map(sensorId => {
-            const sensor = availableSensors.find(s => s.id === sensorId);
+        const datasets = selectedSensors.map((sensorId, index) => {
+            // Find sensor info across all categories
+            let sensorInfo = null;
+            for (const categoryName in sensorCategories) {
+                if (sensorCategories[categoryName].sensors[sensorId]) {
+                    sensorInfo = sensorCategories[categoryName].sensors[sensorId];
+                    break;
+                }
+            }
+            const label = sensorInfo ? `${sensorInfo.name} ${sensorInfo.unit ? `(${sensorInfo.unit})` : ''}` : sensorId;
+            const color = chartColors[index % chartColors.length];
+
             return {
-                label: sensor ? `${sensor.name} ${sensor.unit ? `(${sensor.unit})` : ''}` : sensorId,
+                label: label,
                 data: data.sensors[sensorId],
-                borderColor: sensor ? sensor.color : 'rgb(0, 0, 0)',
-                backgroundColor: sensor ? sensor.color + '33' : 'rgba(0, 0, 0, 0.2)', // Add alpha
-                borderWidth: 2,
-                tension: 0.2, // Slightly curved lines
+                borderColor: color,
+                backgroundColor: color + '1A', // Lighter fill color
+                borderWidth: 1.5,
+                tension: 0.1,
                 fill: false,
-                pointRadius: data.timestamps.length > 100 ? 0 : 3, // Hide points for large datasets
+                pointRadius: data.timestamps.length > 150 ? 0 : 2, // Adjust point visibility
+                pointHoverRadius: 5
             };
         });
-        
+
         // Destroy previous chart if exists
-        if (chart) {
-            chart.destroy();
+        if (historyChart) {
+            historyChart.destroy();
         }
-        
+
         // Create new chart
-        chart = new Chart(historyChart, {
+        historyChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: formattedDates,
                 datasets: datasets
-            },
-            options: {
+            },            options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
@@ -356,151 +554,809 @@
                 },
                 scales: {
                     x: {
-                        title: {
-                            display: true,
-                            text: 'Zaman'
+                        title: { 
+                            display: true, 
+                            text: 'Zaman',
+                            font: {
+                                weight: 'bold',
+                                size: 14
+                            },
+                            padding: {top: 10, bottom: 0}
                         },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
-                            autoSkip: true,
-                            maxTicksLimit: 20
+                        ticks: { 
+                            autoSkip: true, 
+                            maxRotation: 45, 
+                            minRotation: 0, 
+                            padding: 8,
+                            maxTicksLimit: 12,
+                            align: 'center',
+                            font: {
+                                size: 11
+                            },
+                            color: '#555',
+                            callback: function(value, index, values) {
+                                const date = new Date(this.getLabelForValue(value));
+                                const hour = date.getHours();
+                                const minute = date.getMinutes();
+                                const day = date.getDate();
+                                const month = date.getMonth() + 1;
+                                
+                                // Format hours and minutes
+                                const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                
+                                // Show date only at midnight or if it's the first/last tick
+                                if (hour === 0 && minute === 0 || index === 0 || index === values.length - 1) {
+                                    return `${day}/${month} ${timeStr}`;
+                                } else {
+                                    return timeStr;
+                                }
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            tickLength: 8
                         }
                     },
                     y: {
-                        title: {
-                            display: true,
-                            text: 'Değer'
+                        title: { 
+                            display: true, 
+                            text: 'Değer',
+                            font: {
+                                weight: 'bold',
+                                size: 14
+                            } 
+                        },
+                        beginAtZero: false, // Don't force y-axis to start at zero
+                        ticks: {
+                            padding: 10,
+                            font: {
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     }
                 },
                 plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                    // Consider adding zoom plugin later if needed: chartjs-plugin-zoom
+                }
+            }
+        });
+
+        // Show chart, add 'chart-loaded' class to container (CSS will hide loader)
+        historyChartCanvas.style.display = 'block';
+        chartContainer.classList.add('chart-loaded');
+        chartLoading.style.display = 'none'; // Hide loading overlay
+    }
+
+    function updateDataSummary(data, selectedSensors) {
+        let summaryHTML = `<div class="col-12 mb-3"><div class="alert alert-secondary alert-sm">Toplam ${data.metadata.count} veri noktası ${data.metadata.aggregated ? `(Orijinal ${data.metadata.original_count} noktadan örneklenmiştir)` : ''}.</div></div>`;
+
+        selectedSensors.forEach(sensorId => {
+            const sensorValues = data.sensors[sensorId]?.filter(v => v !== null && v !== undefined) || [];
+            if (sensorValues.length === 0) return;
+
+            let sensorInfo = null;
+            for (const categoryName in sensorCategories) {
+                 if (sensorCategories[categoryName].sensors[sensorId]) {
+                     sensorInfo = sensorCategories[categoryName].sensors[sensorId];
+                     break;
+                 }
+            }
+            const name = sensorInfo ? sensorInfo.name : sensorId;
+            const unit = sensorInfo ? sensorInfo.unit : '';
+
+            const min = Math.min(...sensorValues);
+            const max = Math.max(...sensorValues);
+            const avg = sensorValues.reduce((a, b) => a + b, 0) / sensorValues.length;
+            const last = sensorValues[sensorValues.length - 1];
+
+            summaryHTML += `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 card-sm">
+                        <div class="card-header bg-light py-2"><h6 class="mb-0 small fw-bold">${name}</h6></div>
+                        <div class="card-body p-2">
+                            <ul class="list-unstyled mb-0 small">
+                                <li class="d-flex justify-content-between"><span>Min:</span> <strong>${min.toFixed(2)} ${unit}</strong></li>
+                                <li class="d-flex justify-content-between"><span>Max:</span> <strong>${max.toFixed(2)} ${unit}</strong></li>
+                                <li class="d-flex justify-content-between"><span>Ort:</span> <strong>${avg.toFixed(2)} ${unit}</strong></li>
+                                <li class="d-flex justify-content-between"><span>Son:</span> <strong>${last.toFixed(2)} ${unit}</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        dataSummary.innerHTML = summaryHTML || '<p class="text-muted text-center">Özet bilgisi oluşturulamadı.</p>'; // Fallback
+    }    function exportCSV() {
+        if (!currentData || !currentData.timestamps || currentData.timestamps.length === 0) {
+            alert('İndirilecek veri yok.');
+            return;
+        }
+
+        const selectedSensors = Array.from(document.querySelectorAll('#sensor-selection-area .sensor-checkbox:checked'))
+                                    .map(checkbox => checkbox.value);
+        if (selectedSensors.length === 0) {
+             alert('Lütfen dışa aktarmak için en az bir sensör seçin.');
+             return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        let headers = ["Timestamp"];
+        let sensorInfos = {}; // Store info for lookup
+
+        selectedSensors.forEach(sensorId => {
+            let sensorInfo = null;
+            for (const categoryName in sensorCategories) {
+                 if (sensorCategories[categoryName].sensors[sensorId]) {
+                     sensorInfo = sensorCategories[categoryName].sensors[sensorId];
+                     break;
+                 }
+            }
+            const headerName = sensorInfo ? `${sensorInfo.name}${sensorInfo.unit ? ` (${sensorInfo.unit})` : ''}` : sensorId;
+            headers.push(`"${headerName.replace(/"/g, '""')}"`); // Add quotes for safety
+            sensorInfos[sensorId] = sensorInfo; // Store for later use if needed
+        });
+        csvContent += headers.join(",") + "\r\n";
+
+        for (let i = 0; i < currentData.timestamps.length; i++) {
+            // Format timestamp consistently for CSV (e.g., ISO format)
+            let row = [`"${new Date(currentData.timestamps[i]).toISOString()}"`];
+            selectedSensors.forEach(sensorId => {
+                const value = currentData.sensors[sensorId]?.[i];
+                row.push(value !== null && value !== undefined ? value : ""); // Handle null/undefined
+            });
+            csvContent += row.join(",") + "\r\n";
+        }
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        const timeSuffix = timeRangeSelect.value === 'custom'
+            ? `${startTimeInput.value}_to_${endTimeInput.value}`.replace(/[:T]/g,'-')
+            : timeRangeSelect.value;
+        link.setAttribute("download", `irrigo_data_${timeSuffix}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }    // --- Dashboard Functions ---
+    async function fetchDashboardData() {
+        // Show loading state for dashboard
+        document.getElementById('dashboard-loading').style.display = 'block';
+        document.getElementById('dashboard-content').style.display = 'none';
+        
+        try {
+            // Fetch dashboard data from API
+            const response = await fetch("{{ url_for('api_history_dashboard') }}");
+            
+            if (!response.ok) {
+                if (response.status === 401) window.location.href = "{{ url_for('login') }}";
+                throw new Error(`HTTP Error: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.error || 'Unknown error loading dashboard data');
+            }
+              // Update only the statistic cards
+            const data = result.data;
+            // Update stats cards
+            document.getElementById('stat-total-points').textContent = data.total_points || '0';
+            document.getElementById('stat-active-sensors').textContent = data.active_sensors || '0';
+            
+            // Format last update time
+            let lastUpdateText = '--';
+            if (data.last_update) {
+                // Daha okunaklı tarih formatı kullan
+                lastUpdateText = formatTurkishDate(data.last_update);
+            }
+            document.getElementById('stat-last-update').textContent = lastUpdateText;
+            
+            // Format time range
+            let timeRangeText = '--';
+            if (data.time_range) {
+                const startDate = new Date(data.time_range.start);
+                const endDate = new Date(data.time_range.end);
+                timeRangeText = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+            }
+            document.getElementById('stat-time-range').textContent = timeRangeText;
+            
+            // Show dashboard content
+            document.getElementById('dashboard-content').style.display = 'block';
+            
+        } catch (error) {
+            console.error('Dashboard loading error:', error);
+            // Show error message on dashboard
+            document.getElementById('dashboard-content').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i> 
+                    Dashboard yüklenirken hata oluştu: ${error.message}
+                </div>
+            `;
+            document.getElementById('dashboard-content').style.display = 'block';
+        } finally {
+            // Hide loading spinner
+            document.getElementById('dashboard-loading').style.display = 'none';
+        }
+    }
+      function updateDashboard(data) {
+        // Update stats cards
+        document.getElementById('stat-total-points').textContent = data.total_points || '0';
+        document.getElementById('stat-active-sensors').textContent = data.active_sensors || '0';
+        
+        // Format last update time
+        let lastUpdateText = '--';
+        if (data.last_update) {
+            const lastUpdateDate = new Date(data.last_update);
+            lastUpdateText = lastUpdateDate.toLocaleString();
+        }
+        document.getElementById('stat-last-update').textContent = lastUpdateText;
+        
+        // Format time range
+        let timeRangeText = '--';
+        if (data.time_range) {
+            const startDate = new Date(data.time_range.start);
+            const endDate = new Date(data.time_range.end);
+            timeRangeText = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+        }
+        document.getElementById('stat-time-range').textContent = timeRangeText;
+        
+        // Update timeline chart if data available
+        if (data.trend_data && data.trend_data.timestamps && data.trend_data.timestamps.length > 0) {
+            renderTimelineChart(data.trend_data);
+        }
+        
+        // Update category distribution if data available
+        if (data.category_distribution && Object.keys(data.category_distribution).length > 0) {
+            renderCategoryDistributionChart(data.category_distribution);
+        }
+        
+        // Create comparison chart
+        renderComparisonChart(data);
+        
+        // Create daily totals chart
+        renderDailyTotalsChart(data);
+        
+        // Show dashboard content
+        document.getElementById('dashboard-content').style.display = 'block';
+    }    function renderTimelineChart(trendData) {
+        // Show loading state
+        document.getElementById('timeline-loading').classList.remove('d-none');
+        
+        // Get the currently selected category from UI
+        const activeButton = document.querySelector('#timeline-category-selector .active');
+        const selectedCategory = activeButton ? activeButton.dataset.category : 'Genel Hava Durumu';
+        
+        // Filter sensors by the selected category
+        const categoryKeys = [];
+        for (const [sensorKey, sensorValues] of Object.entries(trendData.sensors)) {
+            for (const categoryName in sensorCategories) {
+                if (categoryName === selectedCategory && sensorCategories[categoryName].sensors[sensorKey]) {
+                    categoryKeys.push({
+                        key: sensorKey,
+                        name: sensorCategories[categoryName].sensors[sensorKey].name,
+                        unit: sensorCategories[categoryName].sensors[sensorKey].unit || '',
+                        data: sensorValues
+                    });
+                    break;
+                }
+            }
+        }
+        
+        // If no data found for selected category, show a message
+        if (categoryKeys.length === 0) {
+            document.getElementById('timeline-container').innerHTML = '<div class="text-center text-muted p-5">Bu kategori için veri bulunamadı.</div>';
+            document.getElementById('timeline-loading').classList.add('d-none');
+            return;
+        }
+        
+        // Prepare the container
+        document.getElementById('timeline-container').innerHTML = '';
+        
+        // Convert timestamps to Date objects
+        const timeData = trendData.timestamps.map(timestamp => new Date(timestamp));
+        
+        // Create an array of series data for the chart
+        const seriesData = [];
+        
+        // Add each sensor as a separate series
+        categoryKeys.forEach((sensor, index) => {
+            // Skip sensors with no data
+            if (!sensor.data || sensor.data.length === 0) return;
+            
+            // Create series data points
+            const dataPoints = [];
+            for (let i = 0; i < timeData.length; i++) {
+                if (sensor.data[i] !== null && sensor.data[i] !== undefined) {
+                    dataPoints.push([timeData[i].getTime(), sensor.data[i]]);
+                }
+            }
+            
+            // Skip if no valid data points
+            if (dataPoints.length === 0) return;
+            
+            // Add to series array
+            seriesData.push({
+                name: `${sensor.name} ${sensor.unit ? `(${sensor.unit})` : ''}`,
+                data: dataPoints,
+                color: chartColors[index % chartColors.length],
+                tooltip: {
+                    valueDecimals: 2,
+                    valueSuffix: sensor.unit ? ` ${sensor.unit}` : ''
+                },
+                marker: {
+                    enabled: false,
+                    radius: 3,
+                    symbol: 'circle'
+                },
+                states: {
+                    hover: {
+                        lineWidthPlus: 0
+                    }
+                }
+            });
+        });
+        
+        // Create the chart using ApexCharts or another chart library
+        // Since we appear to be using Chart.js in the rest of the app, I'll create a custom timeline with Chart.js
+          // Create a new canvas for our chart
+        const canvas = document.createElement('canvas');
+        canvas.id = 'timeline-chart';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.maxHeight = '200px';
+        document.getElementById('timeline-container').appendChild(canvas);
+        
+        // Prepare the data for Chart.js
+        const datasets = seriesData.map(series => ({
+            label: series.name,
+            data: series.data.map(point => ({
+                x: point[0],
+                y: point[1]
+            })),
+            borderColor: series.color,
+            backgroundColor: series.color + '20',
+            borderWidth: 2,
+            tension: 0.2,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHitRadius: 10
+        }));
+        
+        // Create a time scale for the x-axis
+        if (window.timelineChart) {
+            window.timelineChart.destroy();
+        }
+        
+        // Create new chart
+        window.timelineChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 500
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                plugins: {
                     legend: {
                         position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 6,
+                            font: {
+                                size: 10
+                            },
+                            usePointStyle: true
+                        }
                     },
                     tooltip: {
                         mode: 'index',
-                        intersect: false
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#666',
+                        bodyColor: '#000',
+                        borderColor: '#ddd',
+                        borderWidth: 1,
+                        padding: 8,
+                        boxPadding: 4,
+                        titleFont: {
+                            size: 11,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 10
+                        },
+                        callbacks: {
+                            title: function(context) {
+                                // Format the timestamp nicely
+                                const timestamp = new Date(context[0].parsed.x);
+                                return timestamp.toLocaleString();
+                            },
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                return `${label}: ${value !== null && value !== undefined ? value.toFixed(2) : 'N/A'}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'HH:mm',
+                                day: 'dd MMM'
+                            },
+                            tooltipFormat: 'yyyy-MM-dd HH:mm'
+                        },
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 8,
+                            maxRotation: 0,
+                            font: {
+                                size: 9
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 9
+                            },
+                            maxTicksLimit: 6
+                        }
                     }
                 }
             }
         });
         
-        // Show chart, hide loading
-        historyChart.style.display = 'block';
-        chartLoading.style.display = 'none';
-    }
-    
-    function updateDataSummary(data, selectedSensors) {
-        // Generate summary HTML
-        let summaryHTML = `
-            <div class="col-12 mb-3">
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Toplam ${data.metadata.count} veri noktası görüntüleniyor.
-                    ${data.metadata.aggregated ? 
-                        `(Orijinal ${data.metadata.original_count} noktadan örneklenmiştir.)` : ''}
-                </div>
-            </div>
-        `;
-        
-        // Create a table for each selected sensor
-        selectedSensors.forEach(sensorId => {
-            const sensorValues = data.sensors[sensorId].filter(v => v !== null);
-            if (sensorValues.length === 0) return;
-            
-            const sensor = availableSensors.find(s => s.id === sensorId);
-            const name = sensor ? sensor.name : sensorId;
-            const unit = sensor ? sensor.unit : '';
-            
-            // Calculate statistics
-            const min = Math.min(...sensorValues);
-            const max = Math.max(...sensorValues);
-            const avg = sensorValues.reduce((sum, val) => sum + val, 0) / sensorValues.length;
-            const current = sensorValues[sensorValues.length - 1];
-            
-            // Add card for each sensor
-            summaryHTML += `
-                <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">${name}</h6>
-                        </div>
-                        <div class="card-body">
-                            <table class="table table-sm">
-                                <tr>
-                                    <td>Minimum</td>
-                                    <td class="text-end">${min.toFixed(2)} ${unit}</td>
-                                </tr>
-                                <tr>
-                                    <td>Maksimum</td>
-                                    <td class="text-end">${max.toFixed(2)} ${unit}</td>
-                                </tr>
-                                <tr>
-                                    <td>Ortalama</td>
-                                    <td class="text-end">${avg.toFixed(2)} ${unit}</td>
-                                </tr>
-                                <tr>
-                                    <td>Son Değer</td>
-                                    <td class="text-end">${current.toFixed(2)} ${unit}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
+        // Setup event listeners for category buttons
+        document.querySelectorAll('#timeline-category-selector button').forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('#timeline-category-selector button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Redraw the chart with the new category
+                renderTimelineChart(trendData);
+            });
         });
         
-        // Update summary container
-        dataSummary.innerHTML = summaryHTML;
+        // Setup zoom buttons
+        document.getElementById('zoom-in-btn').addEventListener('click', function() {
+            const currentUnit = window.timelineChart.options.scales.x.time.unit;
+            
+            if (currentUnit === 'day') {
+                window.timelineChart.options.scales.x.time.unit = 'hour';
+            } else if (currentUnit === 'hour') {
+                window.timelineChart.options.scales.x.time.unit = 'minute';
+            }
+            
+            window.timelineChart.update();
+        });
+        
+        document.getElementById('zoom-out-btn').addEventListener('click', function() {
+            const currentUnit = window.timelineChart.options.scales.x.time.unit;
+            
+            if (currentUnit === 'minute') {
+                window.timelineChart.options.scales.x.time.unit = 'hour';
+            } else if (currentUnit === 'hour') {
+                window.timelineChart.options.scales.x.time.unit = 'day';
+            }
+            
+            window.timelineChart.update();
+        });
+        
+        // Setup refresh button
+        document.getElementById('timeline-refresh-btn').addEventListener('click', function() {
+            fetchDashboardData();
+        });
+        
+        // Hide loading indicator
+        document.getElementById('timeline-loading').classList.add('d-none');
     }
     
-    function exportCSV() {
-        if (!currentData || !currentData.timestamps.length) {
-            alert('İndirilecek veri yok.');
+    function renderCategoryDistributionChart(categoryData) {
+        const canvas = document.getElementById('category-distribution-chart');
+        const ctx = canvas.getContext('2d');
+        
+        // Prepare data for pie chart
+        const labels = Object.keys(categoryData);
+        const values = Object.values(categoryData);
+        
+        // Limit to top 5 categories if there are too many
+        let displayLabels = labels;
+        let displayValues = values;
+        
+        if (labels.length > 5) {
+            // Sort categories by value and take top 4
+            const combined = labels.map((label, i) => ({ label, value: values[i] }));
+            combined.sort((a, b) => b.value - a.value);
+            
+            const topCategories = combined.slice(0, 4);
+            const otherSum = combined.slice(4).reduce((sum, item) => sum + item.value, 0);
+            
+            displayLabels = topCategories.map(item => item.label);
+            displayValues = topCategories.map(item => item.value);
+            
+            // Add "Other" category for the rest
+            if (otherSum > 0) {
+                displayLabels.push('Diğer');
+                displayValues.push(otherSum);
+            }
+        }
+        
+        // Create the chart
+        if (window.categoryChart) {
+            window.categoryChart.destroy();
+        }
+        
+        window.categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: displayLabels,
+                datasets: [{
+                    data: displayValues,
+                    backgroundColor: chartColors.slice(0, displayLabels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 10,
+                            padding: 8,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function renderComparisonChart(data) {
+        // This chart compares the latest values of different sensor types
+        const canvas = document.getElementById('comparison-chart');
+        const ctx = canvas.getContext('2d');
+        
+        // Sample data for comparison (you can customize this based on your needs)
+        // We'll create a simple bar chart comparing values from different categories
+        let comparisonData = {
+            labels: [],
+            values: []
+        };
+        
+        // Extract some key sensors from the trend data if available
+        if (data.trend_data && data.trend_data.sensors) {
+            const sensors = Object.keys(data.trend_data.sensors);
+            for (const sensor of sensors.slice(0, 4)) { // Limit to 4 sensors
+                // Get the latest value for each sensor
+                const values = data.trend_data.sensors[sensor];
+                if (values && values.length > 0) {
+                    const latestValue = values[values.length - 1];
+                    
+                    // Find sensor name
+                    let sensorName = sensor;
+                    for (const categoryName in sensorCategories) {
+                        if (sensorCategories[categoryName].sensors[sensor]) {
+                            sensorName = sensorCategories[categoryName].sensors[sensor].name;
+                            break;
+                        }
+                    }
+                    
+                    comparisonData.labels.push(sensorName);
+                    comparisonData.values.push(latestValue);
+                }
+            }
+        }
+        
+        // Create the chart
+        if (window.comparisonChart) {
+            window.comparisonChart.destroy();
+        }
+        
+        if (comparisonData.labels.length === 0) {
+            // No data to display
+            canvas.parentNode.innerHTML = '<div class="text-center text-muted py-5"><i>Karşılaştırma için yeterli veri yok</i></div>';
             return;
         }
         
-        // Get selected sensors
-        const selectedSensors = Array.from(document.querySelectorAll('.sensor-checkbox:checked'))
-            .map(checkbox => checkbox.value);
-            
-        // Create CSV header
-        let csvContent = "data:text/csv;charset=utf-8,";
-        
-        // Create header row
-        let headers = ["Timestamp"];
-        selectedSensors.forEach(sensorId => {
-            const sensor = availableSensors.find(s => s.id === sensorId);
-            headers.push(sensor ? sensor.name : sensorId);
+        window.comparisonChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: comparisonData.labels,
+                datasets: [{
+                    label: 'Son Değerler',
+                    data: comparisonData.values,
+                    backgroundColor: chartColors.slice(0, comparisonData.labels.length).map(color => color + '80'),
+                    borderColor: chartColors.slice(0, comparisonData.labels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
         });
-        csvContent += headers.join(",") + "\r\n";
+    }
+    
+    function renderDailyTotalsChart(data) {
+        // This chart shows daily totals or averages
+        const canvas = document.getElementById('daily-totals-chart');
+        const ctx = canvas.getContext('2d');
         
-        // Add data rows
-        for (let i = 0; i < currentData.timestamps.length; i++) {
-            let row = [currentData.timestamps[i]];
-            
-            selectedSensors.forEach(sensorId => {
-                row.push(currentData.sensors[sensorId][i] || "");
-            });
-            
-            csvContent += row.join(",") + "\r\n";
+        // If we have trend data with timestamps spanning multiple days, we can create a daily breakdown
+        if (!data.trend_data || !data.trend_data.timestamps || data.trend_data.timestamps.length === 0) {
+            canvas.parentNode.innerHTML = '<div class="text-center text-muted py-5"><i>Günlük toplam için yeterli veri yok</i></div>';
+            return;
         }
         
-        // Create download link
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        // Process trend data into daily aggregates
+        const dailyData = {};
+        const timestamps = data.trend_data.timestamps;
+        const sensorKeys = Object.keys(data.trend_data.sensors);
         
-        // Create filename based on date range
-        const startDate = new Date(currentData.timestamps[0]).toISOString().split('T')[0];
-        const endDate = new Date(currentData.timestamps[currentData.timestamps.length - 1]).toISOString().split('T')[0];
-        link.setAttribute("download", `sensor_data_${startDate}_to_${endDate}.csv`);
-        
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Choose the first sensor for demonstration
+        if (sensorKeys.length > 0) {
+            const targetSensor = sensorKeys[0];
+            const sensorData = data.trend_data.sensors[targetSensor];
+            
+            // Group data by day
+            for (let i = 0; i < timestamps.length; i++) {
+                const date = new Date(timestamps[i]);
+                const dayKey = date.toLocaleDateString();
+                
+                if (!dailyData[dayKey]) {
+                    dailyData[dayKey] = {
+                        sum: 0,
+                        count: 0,
+                        min: Infinity,
+                        max: -Infinity
+                    };
+                }
+                
+                const value = sensorData[i];
+                if (value !== null && value !== undefined) {
+                    dailyData[dayKey].sum += value;
+                    dailyData[dayKey].count++;
+                    dailyData[dayKey].min = Math.min(dailyData[dayKey].min, value);
+                    dailyData[dayKey].max = Math.max(dailyData[dayKey].max, value);
+                }
+            }
+            
+            // Convert to chart data format
+            const chartLabels = Object.keys(dailyData);
+            const avgData = chartLabels.map(day => 
+                dailyData[day].count > 0 ? dailyData[day].sum / dailyData[day].count : 0
+            );
+            const minData = chartLabels.map(day => dailyData[day].min === Infinity ? 0 : dailyData[day].min);
+            const maxData = chartLabels.map(day => dailyData[day].max === -Infinity ? 0 : dailyData[day].max);
+            
+            // Find sensor name
+            let sensorName = targetSensor;
+            for (const categoryName in sensorCategories) {
+                if (sensorCategories[categoryName].sensors[targetSensor]) {
+                    sensorName = sensorCategories[categoryName].sensors[targetSensor].name;
+                    break;
+                }
+            }
+            
+            // Create the chart
+            if (window.dailyTotalsChart) {
+                window.dailyTotalsChart.destroy();
+            }
+            
+            window.dailyTotalsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: `${sensorName} Ort`,
+                            data: avgData,
+                            borderColor: chartColors[0],
+                            backgroundColor: chartColors[0] + '40',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: `${sensorName} Min`,
+                            data: minData,
+                            borderColor: chartColors[1],
+                            borderDash: [5, 5],
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: `${sensorName} Max`,
+                            data: maxData,
+                            borderColor: chartColors[2],
+                            borderDash: [5, 5],
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            canvas.parentNode.innerHTML = '<div class="text-center text-muted py-5"><i>Günlük toplam için yeterli veri yok</i></div>';
+        }
     }
 </script>
 {% endblock %}

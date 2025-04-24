@@ -1,20 +1,54 @@
 /* İrrigo - Custom Application Styles */
 
 /* Navigation enhancements */
-.navbar-nav .nav-link.active {
-    font-weight: 600;
-    position: relative;
+.navbar {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    transition: all 0.3s ease;
 }
 
-.navbar-nav .nav-link.active::after {
-    content: '';
-    position: absolute;
-    left: 0.5rem;
-    right: 0.5rem;
-    bottom: 0;
-    height: 3px;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 3px 3px 0 0;
+.navbar .brand-icon {
+    font-size: 1.4rem;
+    transition: transform 0.3s ease;
+}
+
+.navbar .navbar-brand:hover .brand-icon {
+    transform: rotate(-15deg);
+}
+
+.navbar .brand-text {
+    letter-spacing: 0.5px;
+}
+
+.navbar-nav .nav-link {
+    position: relative;
+    transition: all 0.3s ease;
+    margin: 0.25rem 0;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.navbar-nav .nav-link.active {
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile menu adjustments */
+@media (max-width: 991.98px) {
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1.5rem;
+        margin: 0.25rem 0;
+        border-radius: 0.5rem !important;
+    }
+    
+    .navbar-nav .nav-item.mx-1 {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
 }
 
 /* Custom badges */
@@ -44,7 +78,101 @@
     transform: translateY(-5px);
 }
 
+/* Sticky Header Scroll Effect */
+#sticky-overview-header.scrolled .overview-label-text {
+    display: none; /* Hide text labels when scrolled */
+}
+
+/* Improved styling for scrolled overview header */
+#sticky-overview-header.scrolled {
+    padding: 0.5rem !important;
+    transition: all 0.3s ease;
+}
+
+#sticky-overview-header.scrolled .row > .col > div {
+    padding-top: 0.25rem !important; /* Reduce top padding */
+    padding-bottom: 0.25rem !important; /* Reduce bottom padding */
+    min-height: auto !important;
+}
+
+#sticky-overview-header.scrolled .row > .col > div small {
+    margin-bottom: 0 !important; /* Remove margin below icon */
+}
+
+#sticky-overview-header.scrolled .fs-4 {
+    font-size: 1rem !important; /* Smaller font for values */
+}
+
+#sticky-overview-header.scrolled .mb-3 {
+    margin-bottom: 0.25rem !important; /* Reduce margin below title row */
+}
+
+/* --- History Page Styles --- */
+
+/* Filter Controls */
+#history-form .form-label {
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+}
+
+#history-form .form-select-sm,
+#history-form .form-control-sm {
+    font-size: 0.85rem;
+}
+
+#category-selection-area .form-check,
+#sensor-selection-area .form-check {
+    margin-bottom: 0.4rem;
+    padding-left: 1.75em; /* Align checkboxes nicely */
+}
+
+#category-selection-area .form-check-label,
+#sensor-selection-area .form-check-label {
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+#sensor-selection-area {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    background-color: #f8f9fa;
+}
+
+/* Chart Area */
+#chart-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+}
+
+#chart-loading p {
+    font-size: 0.9rem;
+}
+
+/* Data Summary Cards */
+#data-summary .card-sm .card-header {
+    padding: 0.5rem 0.75rem;
+}
+#data-summary .card-sm .card-body {
+    padding: 0.75rem;
+}
+#data-summary .card-sm .table {
+    margin-bottom: 0;
+}
+#data-summary .card-sm .table td {
+    padding: 0.2rem 0;
+    border: none;
+}
+
+
 /* Mobile optimizations */
+@media (max-width: 992px) { /* Adjust breakpoint for sticky filters if needed */
+    .sticky-lg-top {
+        position: static !important; /* Disable sticky filters on smaller screens */
+    }
+}
+
 @media (max-width: 768px) {
     .navbar-collapse {
         background-color: rgba(27, 94, 32, 0.95);
@@ -56,4 +184,24 @@
     .device-card {
         margin-bottom: 1rem;
     }
+
+    /* Adjust scrolled header for mobile */
+    #sticky-overview-header.scrolled .row > .col > div .fs-4 {
+        font-size: 1rem !important; /* Even smaller font on mobile */
+    }
+    #sticky-overview-header.scrolled .row > .col > div i {
+        font-size: 0.9rem; /* Slightly smaller icons */
+    }
+
+    /* History page mobile adjustments */
+    #chart-container {
+        height: 40vh !important; /* Adjust chart height */
+        min-height: 300px;
+    }
+}
+i.navbar-toggler-icon {
+    background-image: var(--mdb-navbar-toggler-icon-bg)!important;
+}
+div#sticky-overview-header {
+    top: 2rem;
 }

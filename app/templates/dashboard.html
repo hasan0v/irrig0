@@ -4,50 +4,51 @@
 
 {% block content %}
 {# Sticky Header - FR-DASH-A - Enhanced Visuals #}
-<div class="sticky-top p-3 mb-4 shadow-2 rounded-6 bg-white"> 
+
+<div id="sticky-overview-header" class="sticky-top p-3 mb-4 shadow-2 rounded-6 bg-white"> {# Added ID #}
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Genel Bakış</h5>
-        <small class="text-muted"><i class="bi bi-clock me-1"></i>Son Güncelleme: <span id="last-updated-header" class="fw-bold">Never</span></small>
+        <h5 class="mb-0"><i class="bi bi-speedometer2 me-2"></i><span class="overview-label-text">Genel Bakış</span></h5> {# Wrapped title text #}
+        <small class="text-muted"><i class="bi bi-clock me-1"></i><span class="overview-label-text">Son Güncelleme: </span><span id="last-updated-header" class="fw-bold">Never</span></small> {# Wrapped label text #}
     </div>
     <div class="row text-center g-3">        {# FR-DASH-A02: Temperature #}
         <div class="col">
             <div id="temp-card" class="p-3 rounded-6 bg-danger-gradient shadow-1-strong h-100">
-                <small class="d-block mb-1 text-white"><i class="bi bi-thermometer-half me-1"></i>Sıcaklık</small>
+                <small class="d-block mb-1 text-white"><i class="bi bi-thermometer-half me-1"></i><span class="overview-label-text">Sıcaklık</span></small> {# Wrapped label text #}
                 <div class="fs-4 fw-bold text-white"><span id="overview-temp">--</span> °C</div>
             </div>
         </div>
         {# FR-DASH-A03: Humidity #}
         <div class="col">
             <div class="p-3 rounded-6 bg-info-gradient shadow-1-strong h-100">
-                <small class="d-block mb-1 text-white"><i class="bi bi-droplet-half me-1"></i>Nem</small>
+                <small class="d-block mb-1 text-white"><i class="bi bi-droplet-half me-1"></i><span class="overview-label-text">Nem</span></small> {# Wrapped label text #}
                 <div class="fs-4 fw-bold text-white"><span id="overview-humidity">--</span> %</div>
             </div>
         </div>
         {# FR-DASH-A04: UV Intensity #}
         <div class="col">
             <div class="p-3 rounded-6 bg-warning-gradient shadow-1-strong h-100">
-                <small class="d-block mb-1 text-white"><i class="bi bi-sun me-1"></i>UV Yoğunluğu</small>
+                <small class="d-block mb-1 text-white"><i class="bi bi-sun me-1"></i><span class="overview-label-text">UV Yoğunluğu</span></small> {# Wrapped label text #}
                 <div class="fs-4 fw-bold text-white"><span id="overview-uv">--</span></div>
             </div>
         </div>
         {# FR-DASH-A05: Rainfall #}
         <div class="col">
             <div class="p-3 rounded-6 bg-primary-gradient shadow-1-strong h-100">
-                <small class="d-block mb-1 text-white"><i class="bi bi-cloud-rain me-1"></i>Yağış</small> 
+                <small class="d-block mb-1 text-white"><i class="bi bi-cloud-rain me-1"></i><span class="overview-label-text">Yağış</span></small> {# Wrapped label text #}
                 <div class="fs-4 fw-bold text-white"><span id="overview-rainfall">--</span> mm</div>
             </div>
-        </div>        {# FR-DASH-A06: Atmospheric Pressure (Placeholder) #}
+        </div>        {# FR-DASH-A06: Atmospheric Pressure #}
         <div class="col">
             <div class="p-3 rounded-6 bg-secondary shadow-1-strong h-100 text-white">
-                <small class="d-block mb-1"><i class="bi bi-speedometer me-1"></i>Basınç</small>
-                <div class="fs-4 fw-bold">-- hPa</div>
+                <small class="d-block mb-1"><i class="bi bi-speedometer me-1"></i><span class="overview-label-text">Basınç</span></small> {# Wrapped label text #}
+                <div class="fs-4 fw-bold"><span id="overview-pressure">--</span> hPa</div>
             </div>
         </div>
         {# FR-DASH-A07: Water Processed (Placeholder) #}
         <div class="col-md-3">
              <div class="p-3 rounded-6 bg-green-gradient shadow-1-strong h-100 text-white">
-                <small class="d-block mb-1"><i class="bi bi-recycle me-1"></i>Su İşleme (Bugün)</small>
-                <div class="fs-4 fw-bold">Temiz: -- L | Kullanılan: -- L</div>
+                <small class="d-block mb-1"><i class="bi bi-recycle me-1"></i><span class="overview-label-text">Su İşleme (Bugün)</span></small> {# Wrapped label text #}
+                <div class="fs-4 fw-bold"><span class="overview-label-text">Temiz:</span> -- L | <span class="overview-label-text">Kullanılan:</span> -- L</div> {# Wrapped label text #}
             </div>
         </div>
     </div>
@@ -104,19 +105,20 @@
                                     <strong class="fs-4"><span id="soil-ph">--</span></strong>
                                 </div>
                             </div>
-                            <div id="soil-ph-indicator" class="mt-2 p-1 rounded-pill" style="width: 100%; height: 10px; background-color: #e9ecef;"></div>
-                        </div>
-                    </div>
-                    <hr class="my-4">
-                    <h6 class="text-muted mb-3">Diğer Parametreler</h6>
-                    <div class="row text-muted">
+                             <div id="soil-ph-indicator" class="mt-2 p-1 rounded-pill" style="width: 100%; height: 10px; background-color: #e9ecef;"></div>
+                         </div>
+                     </div>
+                     {# Removed canvas id="soil-moisture-chart" #}
+                     <hr class="my-4">
+                     <h6 class="text-muted mb-3">Diğer Parametreler</h6>
+                     <div class="row text-muted">
                          {# FR-DASH-B04: Soil EC (Placeholder) #}
                         <div class="col-sm-4 mb-3">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-lightning-charge fs-5 me-2 text-primary"></i>
                                 <div>
                                     <small class="d-block">EC</small>
-                                    <span>-- µS/cm</span>
+                                    <span id="soil-ec-value">--</span> µS/cm {# Added ID #}
                                 </div>
                             </div>
                         </div>
@@ -126,7 +128,7 @@
                                 <i class="bi bi-flower1 fs-5 me-2 text-success"></i>
                                 <div>
                                     <small class="d-block">NPK</small>
-                                    <span>-- mg/kg</span>
+                                    <span id="soil-npk-value">--</span> mg/kg {# Added ID #}
                                 </div>
                             </div>
                         </div>
@@ -136,7 +138,7 @@
                                 <i class="bi bi-gem fs-5 me-2 text-info"></i>
                                 <div>
                                     <small class="d-block">SAP Nem</small>
-                                    <span>-- %</span>
+                                    <span id="soil-sap-value">--</span> % {# Added ID #}
                                 </div>
                             </div>
                         </div>
@@ -188,13 +190,13 @@
                      <hr>
                      <h6 class="text-muted mb-2">Diğer Parametreler (Placeholder)</h6>
                      <div class="row text-muted small">
-                         {# FR-DASH-E02: Dirty Water Tank Volume (Placeholder) #}
+                         {# FR-DASH-E02: Dirty Water Tank Volume #}
                         <div class="col-sm-6 mb-2">
-                            <i class="bi bi-trash me-1"></i><strong>Kirli Su Hacmi:</strong> <span>-- Litre</span>
+                            <i class="bi bi-trash me-1"></i><strong>Kirli Su Hacmi:</strong> <span id="dirty-tank-volume">--</span> Litre {# Added ID #}
                         </div>
-                         {# FR-DASH-E04: System Water Treatment Rate (Placeholder) #}
+                         {# FR-DASH-E04: System Water Treatment Rate #}
                         <div class="col-sm-6 mb-2">
-                            <i class="bi bi-funnel me-1"></i><strong>Arıtma Hızı:</strong> <span>-- L/min</span>
+                            <i class="bi bi-funnel me-1"></i><strong>Arıtma Hızı:</strong> <span id="treatment-rate">--</span> L/min {# Added ID #}
                         </div>
                     </div>
                 </div>
@@ -254,6 +256,7 @@
 
 {% block scripts %}
 <script>
+    // --- Constants ---
     const REFRESH_INTERVAL = 30000; // 30 seconds (FR-DASH-002)
     const MAX_TANK_VOLUME = 1000; // Example: 1000 Liters (Needs configuration)
 
@@ -271,10 +274,12 @@
     // --- Overview Status Update ---
     function updateOverviewData(data) {
         if (!data) return;
-        updateText('overview-temp', data.temperature, '°C', 1);
+        // Use updated field names from API (to_dict() returns all model fields)
+        updateText('overview-temp', data.air_temperature, '°C', 1); // Use air_temperature
         updateText('overview-humidity', data.humidity, '%', 0);
         updateText('overview-uv', data.uv_intensity, '', 1);
         updateText('overview-rainfall', data.rainfall, 'mm', 1);
+        updateText('overview-pressure', data.atmospheric_pressure, ' hPa', 0); // Added pressure update
         const timestampElementHeader = document.getElementById('last-updated-header');
         if (timestampElementHeader) {
             timestampElementHeader.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A';
@@ -300,7 +305,19 @@
         if (!data) return;
         updateText('soil-temp', data.soil_temperature, '°C', 1);
         updateText('soil-moisture', data.soil_moisture_level, '%', 0);
-        updateText('soil-ph', data.ph_level, '', 2);
+        updateText('soil-ph', data.ph_level, '', 2); // API returns soil_ph as ph_level key
+
+        // Update new soil parameters
+        updateText('soil-ec-value', data.soil_ec, '', 0);
+        // Format NPK string
+        const npkString = (data.soil_n !== null && data.soil_p !== null && data.soil_k !== null)
+                        ? `${data.soil_n.toFixed(0)}-${data.soil_p.toFixed(0)}-${data.soil_k.toFixed(0)}`
+                        : '--';
+
+        console.log("NPK String:", npkString); // Debugging line
+        updateText('soil-npk-value', npkString, '');
+        updateText('soil-sap-value', data.sap_moisture, '%', 0);
+
 
         const moistureBar = document.getElementById('soil-moisture-bar');
         if (moistureBar) {
@@ -358,7 +375,11 @@
     function updateTankData(data) {
         if (!data) return;
         updateText('tank-volume', data.tank_water_volume, 'Litre', 0);
-        updateText('pump-pressure', data.pump_pressure, '', 1);
+        updateText('pump-pressure', data.pump_pressure, ' bar', 1); // API returns water_pressure as pump_pressure key
+
+        // Update new tank parameters
+        updateText('dirty-tank-volume', data.dirty_tank_volume, ' Litre', 0);
+        updateText('treatment-rate', data.system_water_treatment_rate, ' L/min', 1); // API returns treatment_rate as system_water_treatment_rate key
 
         const tankIndicator = document.getElementById('tank-volume-indicator');
         const tankPercentText = document.getElementById('tank-volume-percent');
@@ -506,10 +527,73 @@
     const originalUpdateOverviewData = updateOverviewData;
     updateOverviewData = function(data) {
         originalUpdateOverviewData(data);
-        if (data && data.temperature !== undefined && data.temperature !== null) {
-            updateTemperatureCardColor(data.temperature);
-        }
-    };
+        // Use air_temperature for the card color logic
+        if (data && data.air_temperature !== undefined && data.air_temperature !== null) {
+            updateTemperatureCardColor(data.air_temperature);
+         }
+     };
 
-</script>
-{% endblock %}
+     // --- Soil Moisture Chart Removed ---
+     // const originalUpdateSoilData = updateSoilData; // Keep original updateSoilData if needed elsewhere, otherwise remove
+     // updateSoilData = function(data) { // Remove override if originalUpdateSoilData is removed
+     //     originalUpdateSoilData(data);
+     // };
+     // Removed createSoilMoistureChart, updateSoilMoistureChart, fetchHistoricalSoilMoistureData functions
+ 
+    // --- Sticky Header Scroll Effect ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const header = document.getElementById('sticky-overview-header');
+        const scrollThreshold = 2; // Pixels to scroll before changing header
+
+        if (header) {
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > scrollThreshold) {
+                    header.classList.add('scrolled');
+                } else if (window.scrollY< scrollThreshold){
+                    
+                    header.classList.remove('scrolled');
+                }
+            });
+            // Initial check in case the page loads already scrolled
+            if (window.scrollY > scrollThreshold) {
+                 header.classList.add('scrolled');
+            }
+        }
+    });
+
+    // --- Helper Function ---
+    function formatTurkishDate(dateStr) {
+        if (!dateStr) return '--';
+        
+        const date = new Date(dateStr);
+        
+        // Tarih formatı: 24 Nisan 2025, 15:30
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        
+        return date.toLocaleDateString('tr-TR', options);
+    }
+
+
+    // --- Overview Status Update ---
+    function updateOverviewData(data) {
+        if (!data) return;
+        // Use updated field names from API (to_dict() returns all model fields)
+        updateText('overview-temp', data.air_temperature, '°C', 1); // Use air_temperature
+        updateText('overview-humidity', data.humidity, '%', 0);
+        updateText('overview-uv', data.uv_intensity, '', 1);
+        updateText('overview-rainfall', data.rainfall, 'mm', 1);
+        updateText('overview-pressure', data.atmospheric_pressure, ' hPa', 0); // Added pressure update
+        const timestampElementHeader = document.getElementById('last-updated-header');
+        if (timestampElementHeader) {
+            // Use formatTurkishDate for better date formatting
+            timestampElementHeader.textContent = data.timestamp ? formatTurkishDate(data.timestamp) : 'N/A';
+        }
+    }
+ </script>
+ {% endblock %}

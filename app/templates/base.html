@@ -14,53 +14,59 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body><nav class="navbar navbar-expand-lg navbar-dark bg-dark-green-gradient fixed-top">
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-green-gradient fixed-top shadow-sm">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
-                <i class="bi bi-droplet-fill me-2"></i>İrrigo
+                <i class="bi bi-droplet-fill me-2 brand-icon"></i>
+                <span class="brand-text fw-bold">İrrigo</span>
             </a>
-            <button class="navbar-toggler" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler border-0" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <i class="navbar-toggler-icon"></i>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" aria-current="page" href="{{ url_for('index') }}">
+                    <li class="nav-item mx-1">
+                        <a class="nav-link rounded-pill px-3 {% if request.endpoint == 'index' %}active{% endif %}" aria-current="page" href="{{ url_for('index') }}">
                             <i class="bi bi-speedometer2 me-1"></i>Anlık Durum
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'control' %}active{% endif %}" href="{{ url_for('control') }}">
+                    <li class="nav-item mx-1">
+                        <a class="nav-link rounded-pill px-3 {% if request.endpoint == 'control' %}active{% endif %}" href="{{ url_for('control') }}">
                             <i class="bi bi-sliders me-1"></i>Kontrol
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'history' %}active{% endif %}" href="{{ url_for('history') }}">
+                    <li class="nav-item mx-1">
+                        <a class="nav-link rounded-pill px-3 {% if request.endpoint == 'history' %}active{% endif %}" href="{{ url_for('history') }}">
                             <i class="bi bi-graph-up me-1"></i>Geçmiş Veriler
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'alerts' %}active{% endif %}" href="#">
+                    <li class="nav-item mx-1">
+                        {# Updated link for Alarms page #}
+                        <a class="nav-link rounded-pill px-3 {% if request.endpoint == 'alarms' %}active{% endif %}" href="{{ url_for('alarms') }}">
                             <i class="bi bi-bell me-1"></i>Alarmlar
-                        </a> {# Placeholder link #}
+                        </a>
                     </li>
                 </ul>
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
                     {% if 'user_id' in session %}
-                        <li class="nav-item">
-                            <span class="navbar-text me-3">
-                                <i class="bi bi-person-circle me-1"></i>{{ session.get('username', 'User') }}
+                        <li class="nav-item me-3">
+                            <span class="navbar-text d-flex align-items-center">
+                                <i class="bi bi-person-circle me-2 fs-5"></i>
+                                <span class="d-none d-sm-inline">{{ session.get('username', 'User') }}</span>
                             </span>
                         </li>
                         <li class="nav-item">
-                            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm btn-rounded">
-                                <i class="bi bi-box-arrow-right me-1"></i>Logout
+                            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-rounded btn-sm px-3">
+                                <i class="bi bi-box-arrow-right me-1"></i>
+                                <span class="d-none d-sm-inline">Logout</span>
                             </a>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-sm btn-rounded">
-                                <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-rounded btn-sm px-3">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>
+                                <span class="d-none d-sm-inline">Login</span>
                             </a>
                         </li>
                     {% endif %}
@@ -82,22 +88,68 @@
               {% endfor %}
             </div>
           {% endif %}
-        {% endwith %}
-
-        <!-- Content block for child templates -->
+        {% endwith %}        <!-- Content block for child templates -->
         {% block content %}{% endblock %}
-    </main>    <!-- Footer -->
-    <footer class="footer mt-auto py-3 bg-dark-green-gradient text-white text-center">
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer py-4 bg-dark-green-gradient text-white">
         <div class="container">
-            <span>İrrigo &copy; 2025</span>
+            <div class="row">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h5 class="mb-3 border-bottom pb-2"><i class="bi bi-droplet-fill me-2"></i>İrrigo</h5>
+                    <p class="small">İrrigo, modern sulama teknolojilerini kullanarak su kaynaklarını verimli yöneten akıllı sulama sistemi çözümüdür.</p>
+                    <p class="small mb-0">Version 2.4.1 | Son Güncelleme: 24 Nisan 2025</p>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <h6 class="mb-3 border-bottom pb-2">Hızlı Erişim</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="{{ url_for('index') }}" class="text-white text-decoration-none"><i class="bi bi-chevron-right small me-1"></i>Anlık Durum</a></li>
+                        <li class="mb-2"><a href="{{ url_for('control') }}" class="text-white text-decoration-none"><i class="bi bi-chevron-right small me-1"></i>Kontrol Paneli</a></li>
+                        <li class="mb-2"><a href="{{ url_for('history') }}" class="text-white text-decoration-none"><i class="bi bi-chevron-right small me-1"></i>Geçmiş Veriler</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <h6 class="mb-3 border-bottom pb-2">İletişim</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><i class="bi bi-envelope-fill me-2"></i>info@irrigo-tech.com</li>
+                        <li class="mb-2"><i class="bi bi-telephone-fill me-2"></i>+90 123 456 78 90</li>
+                        <li class="mb-2"><i class="bi bi-geo-alt-fill me-2"></i>Academic Zahid Khalilov street, 23</li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <h6 class="mb-3 border-bottom pb-2">Teknik Destek</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none"><i class="bi bi-question-circle me-1"></i>Yardım</a></li>
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none"><i class="bi bi-file-earmark-text me-1"></i>Dökümanlar</a></li>
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none"><i class="bi bi-shield-check me-1"></i>Sistem Durumu</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-3 opacity-25">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start small">
+                    <span>&copy; 2025 BSU Creativity Workz. Tüm hakları saklıdır.</span>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                    <a href="#" class="text-white me-3"><i class="bi bi-facebook fs-5"></i></a>
+                    <a href="#" class="text-white me-3"><i class="bi bi-twitter-x fs-5"></i></a>
+                    <a href="#" class="text-white me-3"><i class="bi bi-linkedin fs-5"></i></a>
+                    <a href="#" class="text-white"><i class="bi bi-instagram fs-5"></i></a>
+                </div>
+            </div>
         </div>
-    </footer>    <!-- MDB Core JS -->
+    </footer>
+    
+    <!-- MDB Core JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.2/mdb.min.js"></script>
     
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     
     <!-- Block for page-specific JS -->
-    {% block scripts %}{% endblock %}
+    {% block scripts %}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        {% endblock %}
 </body>
 </html>

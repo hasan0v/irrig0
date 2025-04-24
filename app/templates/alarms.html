@@ -1,0 +1,917 @@
+{% extends "base.html" %}
+
+{% block title %}Alarmlar - Irrigo{% endblock %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/alarms.css') }}">
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="page-title">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Alarm Yönetimi
+            </h2>
+            <p class="text-muted">Sisteminizin durumunu izleyin ve alarm kurallarını yönetin</p>
+        </div>
+    </div>    <!-- Modern Card-based Tabs Navigation -->
+    <div class="alarm-tabs mb-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="tab-card active" onclick="openTab(event, 'alarmsListTab')">
+                    <div class="tab-icon">
+                        <i class="bi bi-bell-fill"></i>
+                    </div>
+                    <div class="tab-info">
+                        <span class="tab-title">Aktif Alarmlar</span>
+                        <span class="tab-count" id="activeAlarmsCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="tab-card" onclick="openTab(event, 'alarmRulesTab')">
+                    <div class="tab-icon">
+                        <i class="bi bi-gear-fill"></i>
+                    </div>
+                    <div class="tab-info">
+                        <span class="tab-title">Alarm Kuralları</span>
+                        <span class="tab-count" id="rulesCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alarms List Tab -->
+    <div id="alarmsListTab" class="tab-content active">
+        <div class="card content-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="bi bi-bell me-2"></i>
+                    Alarm Listesi
+                </h3>
+                <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                    <i class="bi bi-funnel me-1"></i> Filtreler
+                </button>
+            </div>
+
+            <div class="collapse" id="filterCollapse">
+                <div class="card-body bg-light border-bottom">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="filterStatus" class="form-label">Durum</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-flag"></i></span>
+                                <select id="filterStatus" class="form-select">
+                                    <option value="">Tümü</option>
+                                    <option value="active">Aktif</option>
+                                    <option value="acknowledged">Onaylandı</option>
+                                    <option value="cleared">Temizlendi</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterSeverity" class="form-label">Önem Derecesi</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-exclamation-circle"></i></span>
+                                <select id="filterSeverity" class="form-select">
+                                    <option value="">Tümü</option>
+                                    <option value="critical">Kritik</option>
+                                    <option value="warning">Uyarı</option>
+                                    <option value="info">Bilgi</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterDevice" class="form-label">Cihaz</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-cpu"></i></span>
+                                <select id="filterDevice" class="form-select">
+                                    <option value="">Tümü</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button id="applyFiltersBtn" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-1"></i> Filtrele
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover alarm-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-sort="timestamp">
+                                <div class="d-flex align-items-center">
+                                    <span>Zaman</span>
+                                    <i class="bi bi-sort-down ms-1"></i>
+                                </div>
+                            </th>
+                            <th scope="col" data-sort="device_name">
+                                <div class="d-flex align-items-center">
+                                    <span>Cihaz</span>
+                                    <i class="bi bi-sort ms-1"></i>
+                                </div>
+                            </th>
+                            <th scope="col" data-sort="alarm_type">
+                                <div class="d-flex align-items-center">
+                                    <span>Alarm Türü</span>
+                                    <i class="bi bi-sort ms-1"></i>
+                                </div>
+                            </th>
+                            <th scope="col" data-sort="severity">
+                                <div class="d-flex align-items-center">
+                                    <span>Önem</span>
+                                    <i class="bi bi-sort ms-1"></i>
+                                </div>
+                            </th>
+                            <th scope="col" data-sort="status">
+                                <div class="d-flex align-items-center">
+                                    <span>Durum</span>
+                                    <i class="bi bi-sort ms-1"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Detaylar</th>
+                            <th scope="col">Eylemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alarmsTableBody">
+                        <tr><td colspan="7" class="text-center py-4"><i class="bi bi-hourglass me-2"></i>Alarmlar yükleniyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-muted">
+                <small><i class="bi bi-info-circle me-1"></i> Tıklayarak sütunlara göre sıralama yapabilirsiniz</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alarm Rules Tab -->
+    <div id="alarmRulesTab" class="tab-content">
+        <div class="card content-card">
+            <div class="card-header d-flex justify-content-between align-items-center">                <h3 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>
+                    Alarm Kuralları
+                </h3>
+                <button id="addRuleBtn" class="btn btn-success" data-mdb-toggle="modal" data-mdb-target="#addAlarmRuleModal">
+                    <i class="bi bi-plus-circle me-1"></i> Yeni Kural Ekle
+                </button>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Cihazlarınız için özel alarm kuralları oluşturun ve yönetin</p>
+                <div class="table-responsive mt-3">
+                    <table class="table table-hover rules-table">
+                        <thead>
+                            <tr>
+                                <th>Kural Adı</th>
+                                <th>Cihaz</th>
+                                <th>Metrik</th>
+                                <th>Koşul</th>
+                                <th>Eşik Değeri</th>
+                                <th>Önem Derecesi</th>
+                                <th>Durum</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alarmRulesTableBody">
+                            <tr><td colspan="8" class="text-center py-4"><i class="bi bi-hourglass me-2"></i>Kurallar yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alarm Detail Modal -->
+<div class="modal fade" id="alarmDetailModal" tabindex="-1" aria-labelledby="alarmDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alarmDetailModalLabel">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Alarm Detayları
+                </h5>                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="alarmDetailBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Yükleniyor...</span>
+                    </div>
+                    <p class="mt-2">Detaylar yükleniyor...</p>
+                </div>
+            </div>
+            <div class="modal-footer">                <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Kapat
+                </button>
+                <button type="button" class="btn btn-warning" id="acknowledgeAlarmBtn" style="display: none;">
+                    <i class="bi bi-check-circle me-1"></i> Onayla
+                </button>
+                <button type="button" class="btn btn-success" id="clearAlarmBtn" style="display: none;">
+                    <i class="bi bi-check2-all me-1"></i> Temizle
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Alarm Rule Modal -->
+<div class="modal fade" id="addAlarmRuleModal" tabindex="-1" aria-labelledby="addAlarmRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAlarmRuleModalLabel">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Yeni Alarm Kuralı Ekle
+                </h5>                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAlarmRuleForm" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="addRuleName" class="form-label">Kural Adı</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                            <input type="text" id="addRuleName" name="name" class="form-control" required>
+                            <div class="invalid-feedback">Lütfen bir kural adı girin</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="addRuleDevice" class="form-label">Cihaz</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-cpu"></i></span>
+                                <select id="addRuleDevice" name="device_id" class="form-select" required>
+                                    <option value="" selected disabled>Cihaz Seçin...</option>
+                                </select>
+                                <div class="invalid-feedback">Lütfen bir cihaz seçin</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="addRuleMetric" class="form-label">İzlenecek Metrik</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-graph-up"></i></span>
+                                <select id="addRuleMetric" name="sensor_metric" class="form-select" required>
+                                    <option value="" selected disabled>Metrik Seçin...</option>
+                                </select>
+                                <div class="invalid-feedback">Lütfen izlenecek bir metrik seçin</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="addRuleCondition" class="form-label">Koşul</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-code"></i></span>
+                                <select id="addRuleCondition" name="condition" class="form-select" required>
+                                    <option value=">">Büyüktür (>)</option>
+                                    <option value="<">Küçüktür (<)</option>
+                                    <option value="=">Eşittir (=)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="addRuleThreshold" class="form-label">Eşik Değeri</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-reception-4"></i></span>
+                                <input type="number" step="any" id="addRuleThreshold" name="threshold_value" class="form-control" required>
+                                <div class="invalid-feedback">Geçerli bir eşik değeri girin</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="addRuleSeverity" class="form-label">Önem Derecesi</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-exclamation-triangle"></i></span>
+                                <select id="addRuleSeverity" name="severity" class="form-select" required>
+                                    <option value="info">Bilgi</option>
+                                    <option value="warning" selected>Uyarı</option>
+                                    <option value="critical">Kritik</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="addRuleCooldown" class="form-label">Bekleme Süresi (saniye)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                <input type="number" id="addRuleCooldown" name="cooldown_period_seconds" class="form-control" value="300">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" id="addRuleIsActive" name="is_active" class="form-check-input" checked>
+                        <label for="addRuleIsActive" class="form-check-label">Aktif</label>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">                        <button type="button" class="btn btn-outline-secondary me-2" data-mdb-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i> İptal
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i> Kural Ekle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Alarm Rule Modal -->
+<div class="modal fade" id="editAlarmRuleModal" tabindex="-1" aria-labelledby="editAlarmRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAlarmRuleModalLabel">
+                    <i class="bi bi-pencil-square me-2"></i>
+                    Alarm Kuralını Düzenle
+                </h5>                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAlarmRuleForm" class="needs-validation" novalidate>
+                    <input type="hidden" id="editRuleId" name="id">
+                    
+                    <div class="mb-3">
+                        <label for="editRuleName" class="form-label">Kural Adı</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                            <input type="text" id="editRuleName" name="name" class="form-control" required>
+                            <div class="invalid-feedback">Lütfen bir kural adı girin</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editRuleDevice" class="form-label">Cihaz</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-cpu"></i></span>
+                                <select id="editRuleDevice" name="device_id" class="form-select" required>
+                                </select>
+                                <div class="invalid-feedback">Lütfen bir cihaz seçin</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editRuleMetric" class="form-label">İzlenecek Metrik</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-graph-up"></i></span>
+                                <select id="editRuleMetric" name="sensor_metric" class="form-select" required>
+                                </select>
+                                <div class="invalid-feedback">Lütfen izlenecek bir metrik seçin</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editRuleCondition" class="form-label">Koşul</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-code"></i></span>
+                                <select id="editRuleCondition" name="condition" class="form-select" required>
+                                    <option value=">">Büyüktür (>)</option>
+                                    <option value="<">Küçüktür (<)</option>
+                                    <option value="=">Eşittir (=)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editRuleThreshold" class="form-label">Eşik Değeri</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-reception-4"></i></span>
+                                <input type="number" step="any" id="editRuleThreshold" name="threshold_value" class="form-control" required>
+                                <div class="invalid-feedback">Geçerli bir eşik değeri girin</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editRuleSeverity" class="form-label">Önem Derecesi</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-exclamation-triangle"></i></span>
+                                <select id="editRuleSeverity" name="severity" class="form-select" required>
+                                    <option value="info">Bilgi</option>
+                                    <option value="warning">Uyarı</option>
+                                    <option value="critical">Kritik</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editRuleCooldown" class="form-label">Bekleme Süresi (saniye)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                <input type="number" id="editRuleCooldown" name="cooldown_period_seconds" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" id="editRuleIsActive" name="is_active" class="form-check-input">
+                        <label for="editRuleIsActive" class="form-check-label">Aktif</label>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">                        <button type="button" class="btn btn-outline-secondary me-2" data-mdb-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i> İptal
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i> Değişiklikleri Kaydet
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/date-formatter.js') }}"></script>
+<script>
+    // --- Tab Handling ---
+    function openTab(evt, tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.style.display = 'none';
+            tab.classList.remove('active');
+        });
+        
+        // Remove active class from all tab cards
+        document.querySelectorAll('.tab-card').forEach(tabCard => {
+            tabCard.classList.remove('active');
+        });
+        
+        // Show the specific tab content
+        const selectedTab = document.getElementById(tabName);
+        if (selectedTab) {
+            selectedTab.style.display = 'block';
+            selectedTab.classList.add('active');
+        }
+        
+        // Add active class to the clicked tab card
+        if (evt && evt.currentTarget) {
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Load data for the opened tab if not already loaded
+        if (tabName === 'alarmsListTab') {
+            loadAlarms();
+        } else if (tabName === 'alarmRulesTab') {
+            loadAlarmRules();
+        }
+    }    // --- API URLs ---
+    const API_URLS = {
+        alarms: "/api/alarms",
+        alarmDetail: (id) => `/api/alarms/${id}`,
+        updateAlarmStatus: (id) => `/api/alarms/${id}/status`,
+        alarmRules: "/api/alarm_rules",
+        createAlarmRule: "/api/alarm_rules",
+        alarmRuleDetail: (id) => `/api/alarm_rules/${id}`,
+        updateAlarmRule: (id) => `/api/alarm_rules/${id}`,
+        deleteAlarmRule: (id) => `/api/alarm_rules/${id}`,
+        sensorMetrics: "/api/sensor_metrics",
+        devicesList: "/api/devices_list"
+    };
+
+    // --- Helper Functions ---
+    function showAlert(message, type = 'danger') {
+        // Simple alert for now, could integrate with a nicer notification system
+        alert(`${type.toUpperCase()}: ${message}`);
+    }
+
+    async function fetchData(url, options = {}) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Fetch error:', error);
+            showAlert(`Veri alınamadı: ${error.message}`);
+            return null; // Indicate failure
+        }
+    }
+
+    // --- Alarm Loading & Display ---
+    let currentSort = { column: 'timestamp', order: 'desc' };
+
+    function renderAlarms(alarms) {
+        const tbody = document.getElementById('alarmsTableBody');
+        tbody.innerHTML = ''; // Clear existing rows
+        if (!alarms || alarms.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7">Gösterilecek alarm bulunamadı.</td></tr>';
+            return;
+        }
+
+        alarms.forEach(alarm => {
+            const row = tbody.insertRow();
+            row.className = `severity-${alarm.severity}`; // Apply severity class
+
+            // Format timestamp using the external formatter
+            const formattedTimestamp = formatDate(alarm.timestamp);
+
+            row.innerHTML = `
+                <td>${formattedTimestamp}</td>
+                <td>${alarm.device_name || 'N/A'}</td>
+                <td>${alarm.alarm_type}</td>
+                <td>${alarm.severity.charAt(0).toUpperCase() + alarm.severity.slice(1)}</td>
+                <td class="status-${alarm.status}">${alarm.status.charAt(0).toUpperCase() + alarm.status.slice(1)}</td>
+                <td>${alarm.details ? alarm.details.substring(0, 50) + (alarm.details.length > 50 ? '...' : '') : ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="showAlarmDetail(${alarm.id})">Detay</button>
+                    ${alarm.status === 'active' ? `<button class="btn btn-sm btn-warning" onclick="updateStatus(${alarm.id}, 'acknowledged')">Onayla</button>` : ''}
+                    ${alarm.status === 'acknowledged' ? `<button class="btn btn-sm btn-success" onclick="updateStatus(${alarm.id}, 'cleared')">Temizle</button>` : ''}
+                </td>
+            `;
+        });
+    }    async function loadAlarms() {
+        const status = document.getElementById('filterStatus').value;
+        const severity = document.getElementById('filterSeverity').value;
+        const deviceId = document.getElementById('filterDevice').value;
+
+        let url = new URL(API_URLS.alarms, window.location.origin);
+        if (status) url.searchParams.append('status', status);
+        if (severity) url.searchParams.append('severity', severity);
+        if (deviceId) url.searchParams.append('device_id', deviceId);
+        url.searchParams.append('sort_by', currentSort.column);
+        url.searchParams.append('order', currentSort.order);
+
+        const alarmsData = await fetchData(url.toString());
+        if (alarmsData) {
+            renderAlarms(alarmsData);
+            
+            // Update active alarms counter
+            const activeAlarms = alarmsData.filter(alarm => alarm.status === 'active').length;
+            document.getElementById('activeAlarmsCount').textContent = activeAlarms;
+        } else {
+             document.getElementById('alarmsTableBody').innerHTML = '<tr><td colspan="7">Alarmlar yüklenirken hata oluştu.</td></tr>';
+        }
+    }
+
+     async function updateStatus(alarmId, newStatus) {
+        const url = API_URLS.updateAlarmStatus(alarmId);
+        const options = {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        };
+        const updatedAlarm = await fetchData(url, options);
+        if (updatedAlarm) {
+            showAlert(`Alarm ${alarmId} durumu ${newStatus} olarak güncellendi.`, 'success');
+            loadAlarms(); // Refresh the list
+            // If modal is open and showing this alarm, update modal too
+            const modal = bootstrap.Modal.getInstance(document.getElementById('alarmDetailModal'));
+            if (modal && document.getElementById('alarmDetailBody').dataset.alarmId == alarmId) {
+                 showAlarmDetail(alarmId); // Re-fetch and show details
+            }
+        } else {
+             showAlert(`Alarm ${alarmId} durumu güncellenemedi.`);
+        }
+    }
+
+    // --- Alarm Detail Modal ---
+    async function showAlarmDetail(alarmId) {
+        const detailBody = document.getElementById('alarmDetailBody');
+        const ackButton = document.getElementById('acknowledgeAlarmBtn');
+        const clearButton = document.getElementById('clearAlarmBtn');
+        detailBody.innerHTML = 'Yükleniyor...';
+        detailBody.dataset.alarmId = alarmId; // Store alarm ID for status updates
+        ackButton.style.display = 'none';
+        clearButton.style.display = 'none';
+        ackButton.onclick = () => updateStatus(alarmId, 'acknowledged');
+        clearButton.onclick = () => updateStatus(alarmId, 'cleared');
+
+
+        const url = API_URLS.alarmDetail(alarmId);
+        const alarm = await fetchData(url);
+
+        if (alarm) {
+            const formattedTimestamp = formatDate(alarm.timestamp);
+            detailBody.innerHTML = `
+                <p><strong>ID:</strong> ${alarm.id}</p>
+                <p><strong>Zaman Damgası:</strong> ${formattedTimestamp}</p>
+                <p><strong>Cihaz:</strong> ${alarm.device_name || 'N/A'} (ID: ${alarm.device_id || 'N/A'})</p>
+                <p><strong>Alarm Türü:</strong> ${alarm.alarm_type}</p>
+                <p><strong>Önem Derecesi:</strong> <span class="severity-${alarm.severity}">${alarm.severity.toUpperCase()}</span></p>
+                <p><strong>Durum:</strong> <span class="status-${alarm.status}">${alarm.status.toUpperCase()}</span></p>
+                <p><strong>Detaylar:</strong></p>
+                <pre>${alarm.details || 'Detay yok.'}</pre>
+                <p><strong>Tetikleyen Kural ID:</strong> ${alarm.triggered_by_rule_id || 'N/A'}</p>
+            `;
+             // Show appropriate action buttons based on current status
+            if (alarm.status === 'active') {
+                ackButton.style.display = 'inline-block';
+            } else if (alarm.status === 'acknowledged') {
+                clearButton.style.display = 'inline-block';
+            }
+        } else {
+            detailBody.innerHTML = 'Alarm detayları yüklenemedi.';
+        }
+
+        var detailModal = new bootstrap.Modal(document.getElementById('alarmDetailModal'));
+        detailModal.show();
+    }
+    // --- Alarm Rule Management ---
+    function renderAlarmRules(rules) {
+        const tbody = document.getElementById('alarmRulesTableBody');
+        tbody.innerHTML = ''; // Clear existing
+        if (!rules || rules.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8">Tanımlı alarm kuralı bulunamadı.</td></tr>';
+            return;
+        }
+        rules.forEach(rule => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${rule.name}</td>
+                <td>${rule.device_name || rule.device_id}</td>
+                <td>${rule.sensor_metric}</td>
+                <td>${rule.condition} ${rule.threshold_value}</td>
+                <td>${rule.threshold_value}</td>
+                <td>${rule.severity}</td>
+                <td>${rule.is_active ? 'Evet' : 'Hayır'}</td>
+                <td class="rule-actions">
+                    <button class="btn btn-sm btn-primary" onclick="editAlarmRule(${rule.id})">Düzenle</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAlarmRule(${rule.id})">Sil</button>
+                </td>
+            `;
+        });
+    }    async function loadAlarmRules() {
+        const rulesData = await fetchData(API_URLS.alarmRules);
+        if (rulesData) {
+            renderAlarmRules(rulesData);
+            
+            // Update rules counter
+            document.getElementById('rulesCount').textContent = rulesData.length;
+        } else {
+            document.getElementById('alarmRulesTableBody').innerHTML = '<tr><td colspan="8">Kurallar yüklenirken hata oluştu.</td></tr>';
+        }
+    }
+
+    async function loadDevicesForSelect(selectId) {
+        const selectElement = document.getElementById(selectId);
+        // Keep the first option (placeholder)
+        const firstOption = selectElement.options[0];
+        selectElement.innerHTML = '';
+        if (firstOption) selectElement.appendChild(firstOption);
+
+
+        const devices = await fetchData(API_URLS.devicesList);
+        if (devices) {
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.id;
+                option.textContent = `${device.name} (ID: ${device.id})`;
+                selectElement.appendChild(option);
+            });
+        }
+    }    async function loadMetricsForSelect(selectId) {
+        const selectElement = document.getElementById(selectId);
+        if (!selectElement) {
+            console.error(`Select element with ID '${selectId}' not found`);
+            return; // Exit if element doesn't exist
+        }
+        
+        // Keep the first option (placeholder)
+        const firstOption = selectElement.options[0];
+        selectElement.innerHTML = '';
+        if (firstOption) selectElement.appendChild(firstOption);
+        
+        // Add a loading option
+        const loadingOption = document.createElement('option');
+        loadingOption.textContent = 'Yükleniyor...';
+        loadingOption.disabled = true;
+        selectElement.appendChild(loadingOption);
+
+        try {
+            const metrics = await fetchData(API_URLS.sensorMetrics);
+            // Remove loading option
+            selectElement.removeChild(loadingOption);
+            
+            if (metrics && Array.isArray(metrics)) {
+                metrics.forEach(metric => {
+                    const option = document.createElement('option');
+                    option.value = metric;
+                    option.textContent = metric;
+                    selectElement.appendChild(option);
+                });
+            } else {
+                // If no metrics or not an array, add a default option
+                const fallbackOption = document.createElement('option');
+                fallbackOption.value = "temperature";
+                fallbackOption.textContent = "Sıcaklık (°C)";
+                selectElement.appendChild(fallbackOption);
+                
+                const fallbackOption2 = document.createElement('option');
+                fallbackOption2.value = "humidity";
+                fallbackOption2.textContent = "Nem (%)";
+                selectElement.appendChild(fallbackOption2);
+                
+                const fallbackOption3 = document.createElement('option');
+                fallbackOption3.value = "soil_moisture";
+                fallbackOption3.textContent = "Toprak Nemi (%)";
+                selectElement.appendChild(fallbackOption3);
+                
+                console.warn('Using fallback metrics due to API error');
+            }
+        } catch (error) {
+            console.error('Error loading metrics:', error);
+            // Remove loading option
+            selectElement.removeChild(loadingOption);
+            
+            // Add fallback metrics if API fails
+            const fallbackMetrics = [
+                { value: "temperature", text: "Sıcaklık (°C)" },
+                { value: "humidity", text: "Nem (%)" },
+                { value: "soil_moisture", text: "Toprak Nemi (%)" },
+                { value: "light", text: "Işık (lux)" },
+                { value: "battery", text: "Batarya (%)" }
+            ];
+            
+            fallbackMetrics.forEach(metric => {
+                const option = document.createElement('option');
+                option.value = metric.value;
+                option.textContent = metric.text;
+                selectElement.appendChild(option);
+            });
+        }
+    }// --- Modal Event Handlers ---
+    // Initialize Add Rule Modal when opened
+    document.getElementById('addRuleBtn').addEventListener('click', function() {
+        // Reset form to avoid stale data
+        document.getElementById('addAlarmRuleForm').reset();
+        // Load devices and metrics for selects
+        loadDevicesForSelect('addRuleDevice');
+        loadMetricsForSelect('addRuleMetric');
+    });
+
+    // --- Form Submissions ---
+    // Add Rule Form Submission (Now in Modal)
+    document.getElementById('addAlarmRuleForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        // Convert types
+        data.device_id = parseInt(data.device_id);
+        data.threshold_value = parseFloat(data.threshold_value);
+        data.cooldown_period_seconds = parseInt(data.cooldown_period_seconds);
+        data.is_active = this.elements.is_active.checked; // Handle checkbox
+
+        const options = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        };
+
+        const newRule = await fetchData(API_URLS.createAlarmRule, options);
+        if (newRule) {
+            showAlert('Alarm kuralı başarıyla eklendi.', 'success');
+            loadAlarmRules(); // Refresh list
+            // bootstrap.Modal.getInstance(document.getElementById('addAlarmRuleModal')).hide(); // Remove this line
+            this.reset(); // Clear form
+            // Manually close modal if needed, or let user close it.
+            // For simplicity, let user close it.
+        } else {
+             showAlert('Alarm kuralı eklenemedi.');
+        }
+    });
+
+     // --- Edit Alarm Rule ---
+    async function editAlarmRule(ruleId) {
+        const rule = await fetchData(API_URLS.alarmRuleDetail(ruleId));
+        if (!rule) {
+            showAlert('Kural detayları alınamadı.');
+            return;
+        }
+
+        // Populate edit form
+        const form = document.getElementById('editAlarmRuleForm');
+        form.elements.id.value = rule.id;
+        form.elements.name.value = rule.name;
+        form.elements.threshold_value.value = rule.threshold_value;
+        form.elements.cooldown_period_seconds.value = rule.cooldown_period_seconds;
+        form.elements.is_active.checked = rule.is_active;
+
+        // Populate selects (ensure options are loaded first)
+        await Promise.all([
+             loadDevicesForSelect('editRuleDevice'),
+             loadMetricsForSelect('editRuleMetric')
+        ]);
+
+        form.elements.device_id.value = rule.device_id;
+        form.elements.sensor_metric.value = rule.sensor_metric;        form.elements.condition.value = rule.condition;
+        form.elements.severity.value = rule.severity;
+
+
+        // Use MDB's modal API instead of Bootstrap
+        const editModalElement = document.getElementById('editAlarmRuleModal');
+        const editModal = new mdb.Modal(editModalElement);
+        editModal.show();
+    }
+
+     document.getElementById('editAlarmRuleForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        const ruleId = data.id;
+
+        // Convert types
+        data.device_id = parseInt(data.device_id);
+        data.threshold_value = parseFloat(data.threshold_value);
+        data.cooldown_period_seconds = parseInt(data.cooldown_period_seconds);
+        data.is_active = this.elements.is_active.checked;
+        delete data.id; // Don't send ID in body for PUT
+
+         const options = {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        };
+
+        const updatedRule = await fetchData(API_URLS.updateAlarmRule(ruleId), options);
+         if (updatedRule) {
+            showAlert('Alarm kuralı başarıyla güncellendi.', 'success');
+            loadAlarmRules(); // Refresh list
+            // bootstrap.Modal.getInstance(document.getElementById('editAlarmRuleModal')).hide(); // Remove this line
+             // Manually close modal if needed, or let user close it.
+        } else {
+             showAlert('Alarm kuralı güncellenemedi.');
+        }
+     });
+
+
+    // --- Delete Alarm Rule ---
+    async function deleteAlarmRule(ruleId) {
+        if (!confirm(`"${ruleId}" ID'li alarm kuralını silmek istediğinizden emin misiniz?`)) {
+            return;
+        }
+
+        const options = { method: 'DELETE' };
+        const result = await fetchData(API_URLS.deleteAlarmRule(ruleId), options);
+
+        if (result && result.message) { // Check for success message
+             showAlert(result.message, 'success');
+             loadAlarmRules(); // Refresh the list
+        } else {
+             showAlert('Alarm kuralı silinemedi.');
+        }
+    }
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+        openTab({ currentTarget: document.querySelector('.tab-link.active') }, 'alarmsListTab');
+        loadDevicesForSelect('filterDevice'); // Load devices for filter dropdown
+
+        // Add event listener for filter button
+        document.getElementById('applyFiltersBtn').addEventListener('click', loadAlarms);
+
+        // Populate dropdowns when Add Rule modal is shown
+        const addModalElement = document.getElementById('addAlarmRuleModal');
+        addModalElement.addEventListener('show.bs.modal', function (event) {
+            // Only call once to prevent multiple requests
+            loadDevicesForSelect('addRuleDevice');
+            loadMetricsForSelect('addRuleMetric');
+        });
+
+        // Removed the explicit click listener and manual modal instantiation.
+        // Relying on data-bs-toggle and data-bs-target attributes on the button.
+
+         // Add event listeners for sorting
+        document.querySelectorAll('#alarmsListTab th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.getAttribute('data-sort');
+                const icon = th.querySelector('i');
+
+                // Toggle order or switch column
+                if (currentSort.column === column) {
+                    currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+                } else {
+                    // Reset previous column icon
+                     const prevTh = document.querySelector(`#alarmsListTab th[data-sort="${currentSort.column}"] i`);
+                     if(prevTh) prevTh.className = 'fas fa-sort';
+
+                    currentSort.column = column;
+                    currentSort.order = 'asc'; // Default to ascending when switching columns
+                }
+
+                 // Reset all icons first
+                 document.querySelectorAll('#alarmsListTab th[data-sort] i').forEach(i => i.className = 'bi bi-sort');
+                 // Update icon for current column
+                 icon.className = `bi bi-sort-${currentSort.order === 'asc' ? 'up' : 'down'}`;
+
+                loadAlarms(); // Reload data with new sorting
+            });
+        });
+    });
+
+</script>
+{% endblock %}
